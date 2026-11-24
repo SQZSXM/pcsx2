@@ -124,6 +124,33 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 
 	GetVifX.queued_gif_wait = requires_wait;
 
+	if (idx == 1 && vifcap::Enabled())
+	{
+		// vifcap: exact VU1 state before this MSCAL batch runs (for replay diffs)
+		struct VifCapVU1State
+		{
+			u32 vi[16];
+			u32 vf[32][4];
+			u32 acc[4];
+			u32 q, p, i;
+			u32 status, clip, mac;
+		} st;
+		for (u32 i = 0; i < 16; i++)
+			st.vi[i] = vuRegs[1].VI[i].UL;
+		for (u32 r = 0; r < 32; r++)
+			for (u32 c = 0; c < 4; c++)
+				st.vf[r][c] = vuRegs[1].VF[r].UL[c];
+		for (u32 c = 0; c < 4; c++)
+			st.acc[c] = vuRegs[1].ACC.UL[c];
+		st.q = vuRegs[1].q.UL;
+		st.p = vuRegs[1].p.UL;
+		st.i = vuRegs[1].i.UL;
+		st.status = vuRegs[1].statusflag;
+		st.clip = vuRegs[1].clipflag;
+		st.mac = vuRegs[1].macflag;
+		vifcap::VU1Regs(&st, sizeof(st));
+	}
+
 	if (!idx || (!THREAD_VU1 && !INSTANT_VU1))
 		vifExecQueue(idx);
 }

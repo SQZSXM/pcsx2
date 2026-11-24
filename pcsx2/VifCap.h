@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6 };
 
 inline FILE*& file()
 {
@@ -67,5 +67,6 @@ inline void Top(uint32_t v) { Rec(REC_TOP, &v, 4, nullptr, 0); }
 inline void Itop(uint32_t v) { Rec(REC_ITOP, &v, 4, nullptr, 0); }
 inline void Kick(uint32_t addr, const void* data, uint32_t len) { Rec(REC_KICK, &addr, 4, data, len); }
 inline void Frame(uint32_t n) { Rec(REC_FRAME, &n, 4, nullptr, 0); }
+inline void VU1Regs(const void* data, uint32_t len) { Rec(REC_VUREGS, data, len, nullptr, 0); }
 
 } // namespace vifcap

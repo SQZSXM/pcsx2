@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "VifCap.h"
+
 //------------------------------------------------------------------
 // Micro VU Micromode Lower instructions
 //------------------------------------------------------------------
@@ -1701,6 +1703,10 @@ void mVU_XGKICK_(u32 addr)
 	u32 diff = 0x4000 - addr;
 	u32 size = gifUnit.GetGSPacketSize(GIF_PATH_1, vuRegs[1].Mem, addr, ~0u, true);
 
+	// vifcap: JIT XGKICK path (this is the one the game actually uses)
+	if (vifcap::Enabled())
+		vifcap::Kick(addr, &vuRegs[1].Mem[addr], (size < diff) ? size : diff);
+
 	if (size > diff)
 	{
 		//DevCon.WriteLn(Color_Green, "microVU1: XGkick Wrap!");
@@ -1724,6 +1730,13 @@ void _vuXGKICKTransfermVU(bool flush)
 			//VUM_LOG("XGKICK reading new tag from %x", VU1.xgkickaddr);
 			u32 size = gifUnit.GetGSPacketSize(GIF_PATH_1, vuRegs[1].Mem, VU1.xgkickaddr, ~0u, flush);
 			VU1.xgkicksizeremaining = size & 0xFFFF;
+			// vifcap: JIT delayed-XGKICK path
+			if (vifcap::Enabled())
+			{
+				const u32 room = 0x4000 - (VU1.xgkickaddr & 0x3FFF);
+				const u32 n = size & 0xFFFF;
+				vifcap::Kick(VU1.xgkickaddr & 0x3FFF, vuRegs[1].Mem + (VU1.xgkickaddr & 0x3FFF), (n < room) ? n : room);
+			}
 			VU1.xgkickendpacket = size >> 31;
 			VU1.xgkickdiff = 0x4000 - VU1.xgkickaddr;
 

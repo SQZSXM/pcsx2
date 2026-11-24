@@ -8,6 +8,7 @@
 #include "VUmicro.h"
 #include "Vif_Dma.h"
 #include "Vif_Dynarec.h"
+#include "VifCap.h"
 
 #define vifOp(vifCodeName) _vifT int vifCodeName(int pass, const u32* data)
 #define pass1 if (pass == 0)
@@ -108,6 +109,12 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 		}
 	}
 
+	// vifcap: TOP/ITOP as seen by VU1 (XTOP/XITOP are the only cursors it reads)
+	if (idx == 1)
+	{
+		vifcap::Top(vifRegs.top);
+		vifcap::Itop(vifRegs.itop);
+	}
 	GetVifX.queued_program = true;
 	if (static_cast<s32>(addr) == -1)
 		GetVifX.queued_pc = addr;

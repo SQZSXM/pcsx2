@@ -8,6 +8,7 @@
 #include "MTVU.h"
 
 #include <cmath>
+#include "VifCap.h"
 u32 laststall = 0;
 //Lower/Upper instructions can use that..
 #define _Ft_ ((VU->code >> 16) & 0x1F)  // The rt part of the instruction register
@@ -1818,6 +1819,9 @@ void _vuXGKICKTransfer(s32 cycles, bool flush)
 			VUM_LOG("XGKICK reading new tag from %x", VU1.xgkickaddr);
 			u32 size = gifUnit.GetGSPacketSize(GIF_PATH_1, vuRegs[1].Mem, VU1.xgkickaddr, ~0u, flush);
 			VU1.xgkicksizeremaining = size & 0xFFFF;
+			// vifcap: the packet VU1 is about to push to GIF (output-side gold)
+			if (vifcap::Enabled())
+				vifcap::Kick(VU1.xgkickaddr, vuRegs[1].Mem + VU1.xgkickaddr, size);
 			VU1.xgkickendpacket = size >> 31;
 			VU1.xgkickdiff = 0x4000 - VU1.xgkickaddr;
 

@@ -6,6 +6,7 @@
 #include "Vif_Dma.h"
 #include "Vif_Dynarec.h"
 #include "MTVU.h"
+#include "VifCap.h"
 
 enum UnpackOffset {
 	OFFSET_X = 0,
@@ -374,6 +375,10 @@ _vifT int nVifUnpack(const u8* data)
 		else
 			vu1Thread.VifUnpack(vif, vifRegs, (u8*)data, size);
 
+		// vifcap: log the post-UNPACK image of VU1 data memory (route A)
+		if (idx == 1 && vifcap::Enabled())
+			vifcap::Mem(vif.tag.addr, getVUptr(1, vif.tag.addr),
+			            static_cast<u32>(vifRegs.num) * nVifT[vif.cmd & 0x0f]);
 		vif.pass     = 0;
 		vif.tag.size = 0;
 		vif.cmd      = 0;
@@ -535,4 +540,15 @@ __ri void _nVifUnpackLoop(const u8* data)
 __fi void _nVifUnpack(int idx, const u8* data, uint mode, bool isFill)
 {
 	UnpackLoopTable[idx][!!mode][isFill](data);
+}
+
+// vifcap: called from SaveState_UnzipFromDisk() right before PostLoadPrep().
+void vifcap_open_at_load()
+{
+	if (const char* cap = std::getenv("VIFCAP"))
+	{
+		vifcap::Open(cap);
+		vifcap::Top(vif1Regs.top);
+		vifcap::Itop(vif1Regs.itop);
+	}
 }

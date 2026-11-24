@@ -1231,6 +1231,10 @@ bool SaveState_UnzipFromDisk(const std::string& filename, Error* error)
 		}
 	}
 
+	// vifcap: start recording exactly when the savestate is restored
+	extern void vifcap_open_at_load();
+	vifcap_open_at_load();
+
 	PostLoadPrep();
 	return true;
 }

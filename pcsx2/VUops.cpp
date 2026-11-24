@@ -1820,8 +1820,13 @@ void _vuXGKICKTransfer(s32 cycles, bool flush)
 			u32 size = gifUnit.GetGSPacketSize(GIF_PATH_1, vuRegs[1].Mem, VU1.xgkickaddr, ~0u, flush);
 			VU1.xgkicksizeremaining = size & 0xFFFF;
 			// vifcap: the packet VU1 is about to push to GIF (output-side gold)
+			// NOTE: GetGSPacketSize puts the EOP flag in bit 31, so clamp to 16 bits and to the 16KB wrap.
 			if (vifcap::Enabled())
-				vifcap::Kick(VU1.xgkickaddr, vuRegs[1].Mem + VU1.xgkickaddr, size);
+			{
+				const u32 room = 0x4000 - (VU1.xgkickaddr & 0x3FFF);
+				const u32 n = size & 0xFFFF;
+				vifcap::Kick(VU1.xgkickaddr & 0x3FFF, vuRegs[1].Mem + (VU1.xgkickaddr & 0x3FFF), (n < room) ? n : room);
+			}
 			VU1.xgkickendpacket = size >> 31;
 			VU1.xgkickdiff = 0x4000 - VU1.xgkickaddr;
 

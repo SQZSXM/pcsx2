@@ -132,7 +132,7 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 			u32 vi[16];
 			u32 vf[32][4];
 			u32 acc[4];
-			u32 q, p, i;
+			u32 q, p;
 			u32 status, clip, mac;
 		} st;
 		for (u32 i = 0; i < 16; i++)
@@ -144,7 +144,6 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 			st.acc[c] = vuRegs[1].ACC.UL[c];
 		st.q = vuRegs[1].q.UL;
 		st.p = vuRegs[1].p.UL;
-		st.i = vuRegs[1].i.UL;
 		st.status = vuRegs[1].statusflag;
 		st.clip = vuRegs[1].clipflag;
 		st.mac = vuRegs[1].macflag;

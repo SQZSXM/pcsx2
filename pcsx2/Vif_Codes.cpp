@@ -147,7 +147,7 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 		st.status = vuRegs[1].statusflag;
 		st.clip = vuRegs[1].clipflag;
 		st.mac = vuRegs[1].macflag;
-		vifcap::VU1Regs(&st, sizeof(st));
+		vifcap::VU1Regs(&st, static_cast<u32>(sizeof(st)));
 	}
 
 	if (!idx || (!THREAD_VU1 && !INSTANT_VU1))

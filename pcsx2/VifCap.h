@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11 };
 
 inline FILE*& file()
 {
@@ -68,6 +68,8 @@ inline void Itop(uint32_t v) { Rec(REC_ITOP, &v, 4, nullptr, 0); }
 inline void Kick(uint32_t addr, const void* data, uint32_t len) { Rec(REC_KICK, &addr, 4, data, len); }
 inline void Frame(uint32_t n) { Rec(REC_FRAME, &n, 4, nullptr, 0); }
 inline void VU1Regs(const void* data, uint32_t len) { Rec(REC_VUREGS, data, len, nullptr, 0); }
+inline void VF(const void* data, uint32_t len) { Rec(REC_VF, data, len, nullptr, 0); }
+
 inline void Micro(uint32_t addr, const void* data, uint32_t len)
 {
     static thread_local uint8_t buf[4 + 0x4000];

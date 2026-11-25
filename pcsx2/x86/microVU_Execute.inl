@@ -358,7 +358,11 @@ _mVUt void mVUcleanUp()
 
 	mVU.cycles = mVU.totalCycles - std::max(0, mVU.cycles);
 	if (vuIndex == 1 && vifcap::Enabled())
-		vifcap::MVUCall(s_vifcap_startpc[1], s_vifcap_budget[1], mVU.cycles);
+	{
+		u32 vi[16];
+		for (int i = 0; i < 16; i++) vi[i] = VU1.VI[i].UL;
+		vifcap::MVUCall(s_vifcap_startpc[1], s_vifcap_budget[1], mVU.cycles, vi);
+	}
 	mVU.regs().cycle += mVU.cycles;
 
 	if (!vuIndex || !THREAD_VU1)

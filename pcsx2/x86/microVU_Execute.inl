@@ -361,7 +361,7 @@ _mVUt void mVUcleanUp()
 	{
 		u32 vi[16];
 		for (int i = 0; i < 16; i++) vi[i] = VU1.VI[i].UL;
-		vifcap::MVUCall(s_vifcap_startpc[1], s_vifcap_budget[1], mVU.cycles, VU1.VI[REG_TPC].UL, vi);
+		vifcap::MVUCall(s_vifcap_startpc[1], s_vifcap_budget[1], mVU.cycles, vi);
 	}
 	mVU.regs().cycle += mVU.cycles;
 

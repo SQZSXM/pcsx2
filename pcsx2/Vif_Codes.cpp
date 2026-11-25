@@ -349,6 +349,19 @@ static __fi void _vifCode_MPG(int idx, u32 addr, const u32* data, int size)
 
 	vifExecQueue(idx);
 
+	if (idx == 1 && vifcap::Enabled())
+	{
+		if ((addr + size * 4) > vuMemSize)
+		{
+			vifcap::Micro(addr, data, vuMemSize - addr);
+			vifcap::Micro(0, (const u8*)data + (vuMemSize - addr), size * 4 - (vuMemSize - addr));
+		}
+		else
+		{
+			vifcap::Micro(addr, data, size * 4);
+		}
+	}
+
 	if (idx && THREAD_VU1)
 	{
 		if ((addr + size * 4) > vuMemSize)

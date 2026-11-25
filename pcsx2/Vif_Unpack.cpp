@@ -7,6 +7,7 @@
 #include "Vif_Dynarec.h"
 #include "MTVU.h"
 #include "VifCap.h"
+#include "VUmicro.h"
 
 enum UnpackOffset {
 	OFFSET_X = 0,
@@ -554,5 +555,6 @@ void vifcap_open_at_load()
 		vifcap_purge_vu1_code();
 		vifcap::Top(vif1Regs.top);
 		vifcap::Itop(vif1Regs.itop);
+		vifcap::Micro(0, VU1.Micro, 0x4000);
 	}
 }

@@ -4,10 +4,10 @@
 #include "microVU.h"
 #include "VifCap.h"
 
-void vifcap_log_block(u32 pc)
+void vifcap_log_block(u32 pc, u32 cycles, u32 count)
 {
 	if (vifcap::Enabled())
-		vifcap::Block(pc);
+		vifcap::Block(pc, cycles, count);
 }
 
 #include "common/AlignedMalloc.h"

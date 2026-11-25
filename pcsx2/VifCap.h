@@ -68,7 +68,11 @@ inline void Itop(uint32_t v) { Rec(REC_ITOP, &v, 4, nullptr, 0); }
 inline void Kick(uint32_t addr, const void* data, uint32_t len) { Rec(REC_KICK, &addr, 4, data, len); }
 inline void Frame(uint32_t n) { Rec(REC_FRAME, &n, 4, nullptr, 0); }
 inline void VU1Regs(const void* data, uint32_t len) { Rec(REC_VUREGS, data, len, nullptr, 0); }
-inline void Block(uint32_t startpc) { Rec(REC_BLOCK, &startpc, 4, nullptr, 0); }
+inline void Block(uint32_t startpc, uint32_t cycles, uint32_t count)
+{
+    const uint32_t b[3] = {startpc, cycles, count};
+    Rec(REC_BLOCK, b, sizeof(b), nullptr, 0);
+}
 
 inline void MVUCall(uint32_t startpc, uint32_t budget, uint32_t used, const uint32_t* vi)
 {

@@ -54,6 +54,9 @@ void vifcap_log_block(u32 pc)
 		u32 vi16[16];
 		for (int i = 0; i < 16; i++) vi16[i] = VU1.VI[i].UL;
 		vifcap::VI(vi16, sizeof(vi16));
+		u32 h = 2166136261u;
+		for (int i = 0; i < 0x4000; i++) { h ^= VU1.Mem[i]; h *= 16777619u; }
+		vifcap::MemHash(h);
 	}
 }
 

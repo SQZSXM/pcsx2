@@ -51,6 +51,9 @@ void vifcap_log_block(u32 pc)
 	{
 		vifcap::Block(pc, it->second.cycles, it->second.count, VU1.VI[2].UL & 0xFFFF, VU1.VI[3].UL & 0xFFFF, VU1.VI[12].UL & 0xFFFF, VU1.macflag, VU1.statusflag);
 		vifcap::VF(VU1.VF, sizeof(VU1.VF));
+		u32 vi16[16];
+		for (int i = 0; i < 16; i++) vi16[i] = VU1.VI[i].UL;
+		vifcap::VI(vi16, sizeof(vi16));
 	}
 }
 

@@ -195,6 +195,14 @@ void doSwapOp(mV)
 
 void mVUexecuteInstruction(mV)
 {
+	// vifcap: per-instruction PC trace (A1 semantics oracle)
+	if (isVU1)
+	{
+		mVUbackupRegs(mVU, true);
+		xFastCall((void*)vifcap_log_insn, xPC);
+		mVUrestoreRegs(mVU, true);
+	}
+
 	if (mVUlow.isNOP)
 	{
 		incPC(1);
@@ -447,6 +455,7 @@ void mVUdebugPrintBlocks(microVU& mVU, bool isEndPC)
 
 // Test cycles to see if we need to exit-early...
 extern void vifcap_log_block(u32 pc);
+extern void vifcap_log_insn(u32 pc);
 extern void vifcap_record_block(u32 pc, u32 cycles, u32 count);
 
 void mVUtestCycles(microVU& mVU, microFlagCycles& mFC)

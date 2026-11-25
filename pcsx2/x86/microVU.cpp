@@ -22,6 +22,16 @@ void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 	s_vifcap_blocks[pc] = {cycles, count};
 }
 
+// Called from JIT-emitted code before every instruction (capped).
+void vifcap_log_insn(u32 pc)
+{
+	static u32 logged = 0;
+	if (!vifcap::Enabled() || logged >= 500000)
+		return;
+	++logged;
+	vifcap::Insn(pc);
+}
+
 // Called from JIT-emitted code at every block entry (xFastCall supports 2 args total).
 void vifcap_log_block(u32 pc)
 {

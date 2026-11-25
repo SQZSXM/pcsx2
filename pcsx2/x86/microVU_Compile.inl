@@ -446,9 +446,19 @@ void mVUdebugPrintBlocks(microVU& mVU, bool isEndPC)
 }
 
 // Test cycles to see if we need to exit-early...
+extern void vifcap_log_block(u32 pc);
+
 void mVUtestCycles(microVU& mVU, microFlagCycles& mFC)
 {
 	iPC = mVUstartPC;
+
+	// vifcap: record every block entry (A1 block-level trace)
+	if (isVU1)
+	{
+		mVUbackupRegs(mVU, true);
+		xFastCall((void*)vifcap_log_block, mVUstartPC);
+		mVUrestoreRegs(mVU, true);
+	}
 
 	// If the VUSyncHack is on, we want the VU to run behind, to avoid conditions where the VU is sped up.
 	if (isVU0 && EmuConfig.Speedhacks.EECycleRate != 0 && (!EmuConfig.Gamefixes.VUSyncHack || EmuConfig.Speedhacks.EECycleRate < 0))

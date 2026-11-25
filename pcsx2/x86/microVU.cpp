@@ -2,6 +2,13 @@
 // SPDX-License-Identifier: GPL-3.0+
 
 #include "microVU.h"
+#include "VifCap.h"
+
+void vifcap_log_block(u32 pc)
+{
+	if (vifcap::Enabled())
+		vifcap::Block(pc);
+}
 
 #include "common/AlignedMalloc.h"
 #include "common/Perf.h"

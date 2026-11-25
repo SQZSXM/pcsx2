@@ -68,17 +68,17 @@ inline void Itop(uint32_t v) { Rec(REC_ITOP, &v, 4, nullptr, 0); }
 inline void Kick(uint32_t addr, const void* data, uint32_t len) { Rec(REC_KICK, &addr, 4, data, len); }
 inline void Frame(uint32_t n) { Rec(REC_FRAME, &n, 4, nullptr, 0); }
 inline void VU1Regs(const void* data, uint32_t len) { Rec(REC_VUREGS, data, len, nullptr, 0); }
-inline void Block(uint32_t startpc, uint32_t cycles, uint32_t count)
+inline void Block(uint32_t startpc, uint32_t tpc, uint32_t cycles, uint32_t count)
 {
-    const uint32_t b[3] = {startpc, cycles, count};
+    const uint32_t b[4] = {startpc, tpc, cycles, count};
     Rec(REC_BLOCK, b, sizeof(b), nullptr, 0);
 }
 
-inline void MVUCall(uint32_t startpc, uint32_t budget, uint32_t used, const uint32_t* vi)
+inline void MVUCall(uint32_t startpc, uint32_t budget, uint32_t used, uint32_t endtpc, const uint32_t* vi)
 {
-    uint32_t b[19];
-    b[0] = startpc; b[1] = budget; b[2] = used;
-    for (int i = 0; i < 16; i++) b[3 + i] = vi[i];
+    uint32_t b[20];
+    b[0] = startpc; b[1] = budget; b[2] = used; b[3] = endtpc;
+    for (int i = 0; i < 16; i++) b[4 + i] = vi[i];
     Rec(REC_MVUCALL, b, sizeof(b), nullptr, 0);
 }
 

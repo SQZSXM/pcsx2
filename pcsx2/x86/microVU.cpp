@@ -29,7 +29,7 @@ void vifcap_log_block(u32 pc)
 		return;
 	const auto it = s_vifcap_blocks.find(pc);
 	if (it != s_vifcap_blocks.end())
-		vifcap::Block(pc, it->second.cycles, it->second.count);
+		vifcap::Block(pc, VU1.VI[REG_TPC].UL, it->second.cycles, it->second.count);
 }
 
 #include "common/AlignedMalloc.h"

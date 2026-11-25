@@ -556,5 +556,6 @@ void vifcap_open_at_load()
 		vifcap::Top(vif1Regs.top);
 		vifcap::Itop(vif1Regs.itop);
 		vifcap::Micro(0, VU1.Micro, 0x4000);
+		vifcap::Mem(0, VU1.Mem, 0x4000);
 	}
 }

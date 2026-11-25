@@ -543,11 +543,15 @@ __fi void _nVifUnpack(int idx, const u8* data, uint mode, bool isFill)
 }
 
 // vifcap: called from SaveState_UnzipFromDisk() right before PostLoadPrep().
+extern void vifcap_purge_vu1_code();
+
 void vifcap_open_at_load()
 {
 	if (const char* cap = std::getenv("VIFCAP"))
 	{
 		vifcap::Open(cap);
+		// force every VU1 block to be recompiled with the trace hooks
+		vifcap_purge_vu1_code();
 		vifcap::Top(vif1Regs.top);
 		vifcap::Itop(vif1Regs.itop);
 	}

@@ -16,6 +16,15 @@ struct VifCapBlockInfo
 std::unordered_map<u32, VifCapBlockInfo> s_vifcap_blocks;
 } // namespace
 
+// Called when the capture opens: drop all compiled VU1 code so every block is
+// recompiled with the logging hooks, while keeping the pipeline state intact.
+void vifcap_purge_vu1_code()
+{
+	const microRegInfo saved = microVU1.prog.lpState;
+	mVUreset(microVU1, false);
+	microVU1.prog.lpState = saved;
+}
+
 // Called at compile time (plain C++ call): remember each block's cost.
 void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 {

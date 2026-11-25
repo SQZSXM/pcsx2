@@ -557,6 +557,7 @@ __fi void _nVifUnpack(int idx, const u8* data, uint mode, bool isFill)
 
 // vifcap: called from SaveState_UnzipFromDisk() right before PostLoadPrep().
 extern void vifcap_purge_vu1_code();
+extern void vifcap_vu1_mem_sync_reset();
 
 void vifcap_open_at_load()
 {
@@ -565,6 +566,7 @@ void vifcap_open_at_load()
 		vifcap::Open(cap);
 		// force every VU1 block to be recompiled with the trace hooks
 		vifcap_purge_vu1_code();
+		vifcap_vu1_mem_sync_reset();   // new capture: re-seed the memory shadow
 		vifcap::Top(vif1Regs.top);
 		vifcap::Itop(vif1Regs.itop);
 		vifcap::Micro(0, VU1.Micro, 0x4000);

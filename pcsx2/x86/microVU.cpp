@@ -44,27 +44,35 @@ void vifcap_log_insn(u32 pc)
 // Called at every VU1 microVU batch entry: the 16 KB VU1 data memory is only
 // otherwise dumped at MSCAL, so resync it here with a diff against a shadow
 // copy (a full dump per batch would make the capture explode).
+namespace
+{
+u8 s_vifcap_memshadow[0x4000];
+bool s_vifcap_memshadow_valid = false;
+} // namespace
+
+void vifcap_vu1_mem_sync_reset()
+{
+	s_vifcap_memshadow_valid = false;
+}
+
 void vifcap_vu1_mem_sync()
 {
-	static u8 shadow[0x4000];
-	static bool shadow_valid = false;
-
 	if (!vifcap::Enabled())
 	{
-		shadow_valid = false;
+		s_vifcap_memshadow_valid = false;
 		return;
 	}
-	if (!shadow_valid)
+	if (!s_vifcap_memshadow_valid)
 	{
 		vifcap::MemSync(0, VU1.Mem, 0x4000);
-		memcpy(shadow, VU1.Mem, 0x4000);
-		shadow_valid = true;
+		memcpy(s_vifcap_memshadow, VU1.Mem, 0x4000);
+		s_vifcap_memshadow_valid = true;
 		return;
 	}
 
 	u32 changed = 0;
 	for (u32 i = 0; i < 0x4000; i++)
-		changed += (VU1.Mem[i] != shadow[i]);
+		changed += (VU1.Mem[i] != s_vifcap_memshadow[i]);
 
 	if (changed > 0x1000)
 	{
@@ -76,7 +84,7 @@ void vifcap_vu1_mem_sync()
 		u32 i = 0;
 		while (i < 0x4000)
 		{
-			if (VU1.Mem[i] == shadow[i])
+			if (VU1.Mem[i] == s_vifcap_memshadow[i])
 			{
 				i++;
 				continue;
@@ -85,7 +93,7 @@ void vifcap_vu1_mem_sync()
 			u32 last = i;
 			while (i < 0x4000 && (i - last) <= 64)
 			{
-				if (VU1.Mem[i] != shadow[i])
+				if (VU1.Mem[i] != s_vifcap_memshadow[i])
 					last = i;
 				i++;
 			}
@@ -93,7 +101,7 @@ void vifcap_vu1_mem_sync()
 			vifcap::MemSync(start, VU1.Mem + start, len);
 		}
 	}
-	memcpy(shadow, VU1.Mem, 0x4000);
+	memcpy(s_vifcap_memshadow, VU1.Mem, 0x4000);
 }
 
 // Called from JIT-emitted code at every block entry (xFastCall supports 2 args total).

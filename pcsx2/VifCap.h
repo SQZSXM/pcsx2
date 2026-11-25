@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14 };
 
 inline FILE*& file()
 {
@@ -63,6 +63,10 @@ inline void Rec(uint8_t type, const void* a, uint32_t alen, const void* b, uint3
 }
 
 inline void Mem(uint32_t addr, const void* data, uint32_t len) { Rec(REC_MEM, &addr, 4, data, len); }
+
+// VU1 data-memory resync at a microVU batch entry: same payload as Mem, but the
+// replay must NOT treat it as an MSCAL entry (it carries no VUREGS).
+inline void MemSync(uint32_t addr, const void* data, uint32_t len) { Rec(REC_MEMSYNC, &addr, 4, data, len); }
 inline void Top(uint32_t v) { Rec(REC_TOP, &v, 4, nullptr, 0); }
 inline void Itop(uint32_t v) { Rec(REC_ITOP, &v, 4, nullptr, 0); }
 inline void Kick(uint32_t addr, const void* data, uint32_t len) { Rec(REC_KICK, &addr, 4, data, len); }

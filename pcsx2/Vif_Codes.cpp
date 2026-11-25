@@ -134,6 +134,7 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 			u32 acc[4];
 			u32 q, p;
 			u32 status, clip, mac;
+			u32 i, r;
 		} st;
 		for (u32 i = 0; i < 16; i++)
 			st.vi[i] = vuRegs[1].VI[i].UL;
@@ -147,6 +148,8 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 		st.status = vuRegs[1].statusflag;
 		st.clip = vuRegs[1].clipflag;
 		st.mac = vuRegs[1].macflag;
+		st.i = vuRegs[1].VI[REG_I].UL;
+		st.r = vuRegs[1].VI[REG_R].UL;
 		vifcap::Mem(0, vuRegs[1].Mem, 0x4000);   // full VU1 data memory each batch
 		vifcap::VU1Regs(&st, static_cast<u32>(sizeof(st)));
 	}

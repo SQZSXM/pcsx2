@@ -41,6 +41,61 @@ void vifcap_log_insn(u32 pc)
 	vifcap::Insn(pc);
 }
 
+// Called at every VU1 microVU batch entry: the 16 KB VU1 data memory is only
+// otherwise dumped at MSCAL, so resync it here with a diff against a shadow
+// copy (a full dump per batch would make the capture explode).
+void vifcap_vu1_mem_sync()
+{
+	static u8 shadow[0x4000];
+	static bool shadow_valid = false;
+
+	if (!vifcap::Enabled())
+	{
+		shadow_valid = false;
+		return;
+	}
+	if (!shadow_valid)
+	{
+		vifcap::MemSync(0, VU1.Mem, 0x4000);
+		memcpy(shadow, VU1.Mem, 0x4000);
+		shadow_valid = true;
+		return;
+	}
+
+	u32 changed = 0;
+	for (u32 i = 0; i < 0x4000; i++)
+		changed += (VU1.Mem[i] != shadow[i]);
+
+	if (changed > 0x1000)
+	{
+		// too fragmented for ranges, just resync the whole thing
+		vifcap::MemSync(0, VU1.Mem, 0x4000);
+	}
+	else
+	{
+		u32 i = 0;
+		while (i < 0x4000)
+		{
+			if (VU1.Mem[i] == shadow[i])
+			{
+				i++;
+				continue;
+			}
+			u32 start = i;
+			u32 last = i;
+			while (i < 0x4000 && (i - last) <= 64)
+			{
+				if (VU1.Mem[i] != shadow[i])
+					last = i;
+				i++;
+			}
+			const u32 len = last + 1 - start;
+			vifcap::MemSync(start, VU1.Mem + start, len);
+		}
+	}
+	memcpy(shadow, VU1.Mem, 0x4000);
+}
+
 // Called from JIT-emitted code at every block entry (xFastCall supports 2 args total).
 void vifcap_log_block(u32 pc)
 {

@@ -366,6 +366,9 @@ _vifT int nVifUnpack(const u8* data)
 				vifRegs.num = 256;
 		}
 
+		// vifcap: remember the destination before the unpack advances tag.addr
+		const u32 cap_addr = vif.tag.addr;
+
 		if (!idx || !THREAD_VU1)
 		{
 			if (newVifDynaRec)
@@ -376,10 +379,19 @@ _vifT int nVifUnpack(const u8* data)
 		else
 			vu1Thread.VifUnpack(vif, vifRegs, (u8*)data, size);
 
-		// vifcap: log the post-UNPACK image of VU1 data memory (route A)
+		// vifcap: log the post-UNPACK image of VU1 data memory (route A).
+		// NOTE: the unpack loop advances vif.tag.addr by 16 per quadword (plus
+		// any cycle skip), so the destination has to be remembered *before* the
+		// unpack and the span comes from the address it stopped at.
 		if (idx == 1 && vifcap::Enabled())
-			vifcap::Mem(vif.tag.addr, getVUptr(1, vif.tag.addr),
-			            static_cast<u32>(vifRegs.num) * nVifT[vif.cmd & 0x0f]);
+		{
+			u32 addr = cap_addr;
+			u32 end = vif.tag.addr;
+			u32 span = (end >= addr) ? (end + 16 - addr) : (0x4000 - addr);
+			if (span > 0x4000 - addr)
+				span = 0x4000 - addr;
+			vifcap::Mem(addr, getVUptr(1, addr), span);
+		}
 		vif.pass     = 0;
 		vif.tag.size = 0;
 		vif.cmd      = 0;

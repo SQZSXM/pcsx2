@@ -326,6 +326,13 @@ _mVUt void* mVUexecute(u32 startPC, u32 cycles)
 	microVU& mVU = mVUx;
 	s_vifcap_startpc[vuIndex] = startPC;
 	s_vifcap_budget[vuIndex] = cycles;
+
+	if (vuIndex == 1)
+	{
+		extern void vifcap_vu1_mem_sync();
+		vifcap_vu1_mem_sync();   // resync VU1 data memory at every batch entry
+	}
+
 	u32 vuLimit = vuIndex ? 0x3ff8 : 0xff8;
 	if (startPC > vuLimit + 7)
 	{

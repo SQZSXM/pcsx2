@@ -3,6 +3,10 @@
 
 #pragma once
 
+extern void vifcap_log_insn(u32 pc);
+extern void vifcap_log_block(u32 pc);
+extern void vifcap_record_block(u32 pc, u32 cycles, u32 count);
+
 //------------------------------------------------------------------
 // Messages Called at Execution Time...
 //------------------------------------------------------------------

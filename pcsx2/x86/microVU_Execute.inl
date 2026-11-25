@@ -3,6 +3,8 @@
 
 #pragma once
 
+#include "VifCap.h"
+
 #include "Config.h"
 #include "GS/MultiISA.h"
 
@@ -315,10 +317,15 @@ static void mVUGenerateCompareState(mV)
 //------------------------------------------------------------------
 
 // Executes for number of cycles
+static u32 s_vifcap_startpc[2] = {0, 0};
+static u32 s_vifcap_budget[2] = {0, 0};
+
 _mVUt void* mVUexecute(u32 startPC, u32 cycles)
 {
 
 	microVU& mVU = mVUx;
+	s_vifcap_startpc[vuIndex] = startPC;
+	s_vifcap_budget[vuIndex] = cycles;
 	u32 vuLimit = vuIndex ? 0x3ff8 : 0xff8;
 	if (startPC > vuLimit + 7)
 	{
@@ -350,6 +357,8 @@ _mVUt void mVUcleanUp()
 	}
 
 	mVU.cycles = mVU.totalCycles - std::max(0, mVU.cycles);
+	if (vuIndex == 1 && vifcap::Enabled())
+		vifcap::MVUCall(s_vifcap_startpc[1], s_vifcap_budget[1], mVU.cycles);
 	mVU.regs().cycle += mVU.cycles;
 
 	if (!vuIndex || !THREAD_VU1)

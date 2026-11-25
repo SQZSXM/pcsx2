@@ -79,9 +79,9 @@ inline void Micro(uint32_t addr, const void* data, uint32_t len)
 
 inline void Insn(uint32_t pc) { Rec(REC_INSN, &pc, 4, nullptr, 0); }
 
-inline void Block(uint32_t startpc, uint32_t cycles, uint32_t count, uint32_t vi12)
+inline void Block(uint32_t startpc, uint32_t cycles, uint32_t count, uint32_t vi2, uint32_t vi3, uint32_t vi12)
 {
-    const uint32_t b[4] = {startpc, cycles, count, vi12};
+    const uint32_t b[6] = {startpc, cycles, count, vi2, vi3, vi12};
     Rec(REC_BLOCK, b, sizeof(b), nullptr, 0);
 }
 

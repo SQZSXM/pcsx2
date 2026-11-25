@@ -4,10 +4,32 @@
 #include "microVU.h"
 #include "VifCap.h"
 
-void vifcap_log_block(u32 pc, u32 cycles, u32 count)
+#include <unordered_map>
+
+namespace
 {
-	if (vifcap::Enabled())
-		vifcap::Block(pc, cycles, count);
+struct VifCapBlockInfo
+{
+	u32 cycles;
+	u32 count;
+};
+std::unordered_map<u32, VifCapBlockInfo> s_vifcap_blocks;
+} // namespace
+
+// Called at compile time (plain C++ call): remember each block's cost.
+void vifcap_record_block(u32 pc, u32 cycles, u32 count)
+{
+	s_vifcap_blocks[pc] = {cycles, count};
+}
+
+// Called from JIT-emitted code at every block entry (xFastCall supports 2 args total).
+void vifcap_log_block(u32 pc)
+{
+	if (!vifcap::Enabled())
+		return;
+	const auto it = s_vifcap_blocks.find(pc);
+	if (it != s_vifcap_blocks.end())
+		vifcap::Block(pc, it->second.cycles, it->second.count);
 }
 
 #include "common/AlignedMalloc.h"

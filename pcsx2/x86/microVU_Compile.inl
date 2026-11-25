@@ -446,7 +446,8 @@ void mVUdebugPrintBlocks(microVU& mVU, bool isEndPC)
 }
 
 // Test cycles to see if we need to exit-early...
-extern void vifcap_log_block(u32 pc, u32 cycles, u32 count);
+extern void vifcap_log_block(u32 pc);
+extern void vifcap_record_block(u32 pc, u32 cycles, u32 count);
 
 void mVUtestCycles(microVU& mVU, microFlagCycles& mFC)
 {
@@ -455,8 +456,9 @@ void mVUtestCycles(microVU& mVU, microFlagCycles& mFC)
 	// vifcap: record every block entry (A1 block-level trace)
 	if (isVU1)
 	{
+		vifcap_record_block(mVUstartPC, mVUcycles, mVUcount);
 		mVUbackupRegs(mVU, true);
-		xFastCall((void*)vifcap_log_block, mVUstartPC, mVUcycles, mVUcount);
+		xFastCall((void*)vifcap_log_block, mVUstartPC);
 		mVUrestoreRegs(mVU, true);
 	}
 

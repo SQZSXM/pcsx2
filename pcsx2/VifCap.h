@@ -25,9 +25,17 @@ enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME
 // Per-instruction VF/ACC/Q sample (emitted code stores one VF register into
 // g_vifcap_vfbuf before the hook runs).  Slices 74+ of the analysed game diverge
 // only in computed values, which the block-boundary checks cannot see.
-// (VfTrace itself is defined below, after Rec().)
 extern uint32_t g_vifcap_vfidx;
 extern uint32_t g_vifcap_vfbuf[4];
+inline void VfTrace(uint32_t pc, const uint32_t* vf, const uint32_t* acc, uint32_t q)
+{
+    uint32_t b[10];
+    b[0] = pc;
+    memcpy(b + 1, vf, 16);
+    memcpy(b + 5, acc, 16);
+    b[9] = q;
+    Rec(REC_VFTRACE, b, sizeof(b), nullptr, 0);
+}
 
 // Set by the emitted LQ/LQI/LQD code with the effective byte offset it is about to
 // read; vifcap_log_insn() turns it into a REC_MEMREAD record (the replay compares
@@ -112,17 +120,6 @@ inline void MemRead(uint32_t pc, uint32_t addr, const uint32_t* data)
     buf[1] = addr;
     memcpy(buf + 2, data, 16);
     Rec(REC_MEMREAD, buf, sizeof(buf), nullptr, 0);
-}
-
-// Per-instruction VF/ACC/Q sample (see the extern declarations above).
-inline void VfTrace(uint32_t pc, const uint32_t* vf, const uint32_t* acc, uint32_t q)
-{
-    uint32_t b[10];
-    b[0] = pc;
-    memcpy(b + 1, vf, 16);
-    memcpy(b + 5, acc, 16);
-    b[9] = q;
-    Rec(REC_VFTRACE, b, sizeof(b), nullptr, 0);
 }
 
 // Per-instruction memory watch: windows of VU1 memory whose 4-byte changes are

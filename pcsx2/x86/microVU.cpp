@@ -35,6 +35,7 @@ void vifcap_purge_vu1_code()
 	                    microVU1.prog.lpState.xgkick,
 	                    microVU1.prog.lpState.xgkickcycles,
 	                    microVU1.VIxgkick);
+	s_vifcap_watch_valid = false;
 }
 
 // Called from JIT-emitted code right before a one-shot XGKICK transfer: remember
@@ -53,10 +54,54 @@ void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 }
 
 // Called from JIT-emitted code before every instruction (capped).
+// vifcap: also runs the small VU-memory watch (packet buffer 0x0C00..0x0D80) --
+// changes are attributed to the instruction that caused them, which is the only
+// way to see mid-block memory state.
+namespace
+{
+constexpr u32 kVifcapWatchBase = 0x0C00;
+constexpr u32 kVifcapWatchLen = 0x180;
+u8 s_vifcap_watch_shadow[kVifcapWatchLen];
+bool s_vifcap_watch_valid = false;
+u32 s_vifcap_watch_prev_pc = 0;
+} // namespace
+
 void vifcap_log_insn(u32 pc)
 {
 	static u32 logged = 0;
-	if (!vifcap::Enabled() || logged >= 500000)
+	if (!vifcap::Enabled())
+		return;
+
+	if (s_vifcap_watch_valid)
+	{
+		u32 addr[64];
+		u32 value[64];
+		u32 n = 0;
+		for (u32 off = 0; off < kVifcapWatchLen && n < 64; off += 4)
+		{
+			u32 v;
+			memcpy(&v, VU1.Mem + kVifcapWatchBase + off, 4);
+			u32 old;
+			memcpy(&old, s_vifcap_watch_shadow + off, 4);
+			if (v != old)
+			{
+				addr[n] = kVifcapWatchBase + off;
+				value[n] = v;
+				memcpy(s_vifcap_watch_shadow + off, &v, 4);
+				++n;
+			}
+		}
+		if (n)
+			vifcap::MemWatch(s_vifcap_watch_prev_pc, addr, value, n);
+	}
+	else
+	{
+		memcpy(s_vifcap_watch_shadow, VU1.Mem + kVifcapWatchBase, kVifcapWatchLen);
+		s_vifcap_watch_valid = true;
+	}
+	s_vifcap_watch_prev_pc = pc;
+
+	if (logged >= 500000)
 		return;
 	++logged;
 	vifcap::Insn(pc);

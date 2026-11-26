@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18 };
 
 inline FILE*& file()
 {
@@ -79,6 +79,26 @@ inline void KickInfo(uint32_t pc, uint32_t cycles)
 {
     const uint32_t b[2] = {pc, cycles};
     Rec(REC_KICKINFO, b, sizeof(b), nullptr, 0);
+}
+
+// Per-instruction memory watch on a small window of VU1 memory (default
+// 0x0C00..0x0D80, the packet buffer of the first XGKICK).  Changes are logged as
+//   u32 pc | u32 count | count * (u32 addr, u32 value)
+// so the replay can see which instruction wrote a packet word and with what
+// value (A's block-boundary hashes cannot show mid-block state).
+inline void MemWatch(uint32_t pc, const uint32_t* addr, const uint32_t* value, uint32_t count)
+{
+    static thread_local uint8_t buf[8 + 8 * 64];
+    if (count > 64)
+        count = 64;
+    memcpy(buf, &pc, 4);
+    memcpy(buf + 4, &count, 4);
+    for (uint32_t i = 0; i < count; i++)
+    {
+        memcpy(buf + 8 + i * 8, &addr[i], 4);
+        memcpy(buf + 12 + i * 8, &value[i], 4);
+    }
+    Rec(REC_MEMWATCH, buf, 8 + count * 8, nullptr, 0);
 }
 inline void Frame(uint32_t n) { Rec(REC_FRAME, &n, 4, nullptr, 0); }
 inline void VU1Regs(const void* data, uint32_t len) { Rec(REC_VUREGS, data, len, nullptr, 0); }

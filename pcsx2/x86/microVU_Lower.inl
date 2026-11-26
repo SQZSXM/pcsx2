@@ -1820,9 +1820,16 @@ static __fi void mVU_XGKICK_SYNC(mV, bool flush)
 
 static __fi void mVU_XGKICK_DELAY(mV)
 {
+	extern void vifcap_log_kickinfo(u32 pc);
 	mVU.regAlloc->flushCallerSavedRegisters();
 
 	mVUbackupRegs(mVU, true, true);
+	// vifcap: the packet logged below belongs to *this* VU instruction (xPC is a
+	// compile-time constant here), so record it for the replay's comparison.
+	if (vifcap::Enabled() && isVU1)
+	{
+		xFastCall((void*)vifcap_log_kickinfo, xPC);
+	}
 #if 0 // XGkick Break - ToDo: Change "SomeGifPathValue" to w/e needs to be tested
 	xTEST (ptr32[&SomeGifPathValue], 1); // If '1', breaks execution
 	xMOV  (ptr32[&mVU.resumePtrXG], (uptr)xGetPtr() + 10 + 6);

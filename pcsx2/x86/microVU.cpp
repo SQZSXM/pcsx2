@@ -37,6 +37,15 @@ void vifcap_purge_vu1_code()
 	                    microVU1.VIxgkick);
 }
 
+// Called from JIT-emitted code right before a one-shot XGKICK transfer: remember
+// which VU instruction performed it (compile-time pc) and the cycle counter.
+void vifcap_log_kickinfo(u32 pc)
+{
+	if (!vifcap::Enabled())
+		return;
+	vifcap::KickInfo(pc, microVU1.cycles);
+}
+
 // Called at compile time (plain C++ call): remember each block's cost.
 void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 {

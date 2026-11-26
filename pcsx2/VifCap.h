@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17 };
 
 inline FILE*& file()
 {
@@ -70,6 +70,16 @@ inline void MemSync(uint32_t addr, const void* data, uint32_t len) { Rec(REC_MEM
 inline void Top(uint32_t v) { Rec(REC_TOP, &v, 4, nullptr, 0); }
 inline void Itop(uint32_t v) { Rec(REC_ITOP, &v, 4, nullptr, 0); }
 inline void Kick(uint32_t addr, const void* data, uint32_t len) { Rec(REC_KICK, &addr, 4, data, len); }
+
+// Context of the next REC_KICK: the VU instruction pc whose emitted code performed
+// the transfer (compile-time constant for the one-shot path) plus the VU cycle
+// counter at that moment.  Lets the replay compare the packet against the VU
+// memory of exactly that point instead of guessing the transfer time.
+inline void KickInfo(uint32_t pc, uint32_t cycles)
+{
+    const uint32_t b[2] = {pc, cycles};
+    Rec(REC_KICKINFO, b, sizeof(b), nullptr, 0);
+}
 inline void Frame(uint32_t n) { Rec(REC_FRAME, &n, 4, nullptr, 0); }
 inline void VU1Regs(const void* data, uint32_t len) { Rec(REC_VUREGS, data, len, nullptr, 0); }
 inline void VF(const void* data, uint32_t len) { Rec(REC_VF, data, len, nullptr, 0); }

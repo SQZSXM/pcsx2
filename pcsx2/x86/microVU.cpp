@@ -85,6 +85,11 @@ void vifcap_log_kickinfo(u32 pc)
 void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 {
 	s_vifcap_blocks[pc] = {cycles, count};
+	// vifcap: dump the words this block is being compiled from.  microVU keeps
+	// compiled blocks cached, so after a microcode re-upload an old block still
+	// executes its old instructions -- the replay has to know them.
+	if (vifcap::Enabled() && count && count <= 128)
+		vifcap::BlockCode(pc, count, VU1.Micro + pc, count * 8);
 }
 
 // Parse VIFCAP_WATCH once: "pc_lo:pc_hi:addr_lo:len[:addr_lo:len...]".

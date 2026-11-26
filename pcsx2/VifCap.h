@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19, REC_BLOCKCODE = 20 };
 
 // Set by the emitted LQ/LQI/LQD code with the effective byte offset it is about to
 // read; vifcap_log_insn() turns it into a REC_MEMREAD record (the replay compares
@@ -89,6 +89,15 @@ inline void KickInfo(uint32_t pc, uint32_t cycles)
 // Effective address (and the data at that address) of an LQ/LQI/LQD, recorded by
 // the per-instruction hook.  Comparing it with the replay's own effective
 // addresses shows exactly where a VI (pointer) state diverges.
+// Instruction words of a block as the JIT compiled it.  microVU keeps compiled
+// blocks cached across microcode re-uploads, so a block can execute code that no
+// longer exists in the current micro memory; the replay must use these words.
+inline void BlockCode(uint32_t pc, uint32_t count, const void* words, uint32_t bytes)
+{
+    const uint32_t hdr[2] = {pc, count};
+    Rec(REC_BLOCKCODE, hdr, sizeof(hdr), words, bytes);
+}
+
 inline void MemRead(uint32_t pc, uint32_t addr, const uint32_t* data)
 {
     uint32_t buf[6];

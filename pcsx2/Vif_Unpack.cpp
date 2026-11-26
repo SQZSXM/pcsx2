@@ -559,8 +559,16 @@ __fi void _nVifUnpack(int idx, const u8* data, uint mode, bool isFill)
 extern void vifcap_purge_vu1_code();
 extern void vifcap_vu1_mem_sync_reset();
 
-void vifcap_open_at_load()
+void vifcap_open_now()
 {
+	// The capture normally opens when a savestate is loaded.  Opening it on the
+	// first VU1 microprogram run makes a recording possible without one (the
+	// analysed game only reaches the interesting VU code by loading a state).
+	static bool tried = false;
+	if (tried || vifcap::Enabled())
+		return;
+	tried = true;
+
 	if (const char* cap = std::getenv("VIFCAP"))
 	{
 		vifcap::Open(cap);
@@ -572,4 +580,9 @@ void vifcap_open_at_load()
 		vifcap::Micro(0, VU1.Micro, 0x4000);
 		vifcap::Mem(0, VU1.Mem, 0x4000);
 	}
+}
+
+void vifcap_open_at_load()
+{
+	vifcap_open_now();
 }

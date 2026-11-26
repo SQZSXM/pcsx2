@@ -9,6 +9,9 @@
 #include "VifCap.h"
 #include "VUmicro.h"
 
+#include <cstdlib>
+#include <filesystem>
+
 enum UnpackOffset {
 	OFFSET_X = 0,
 	OFFSET_Y = 1,
@@ -561,25 +564,35 @@ extern void vifcap_vu1_mem_sync_reset();
 
 void vifcap_open_now()
 {
-	// The capture normally opens when a savestate is loaded.  Opening it on the
-	// first VU1 microprogram run makes a recording possible without one (the
-	// analysed game only reaches the interesting VU code by loading a state).
-	static bool tried = false;
-	if (tried || vifcap::Enabled())
+	// The capture opens either on the first VU1 microprogram run or when a
+	// savestate is loaded.  When VIFCAP_TRIGGER names a file, opening waits for
+	// that file to appear, so the user can boot and reach the scene at full speed
+	// (and start the traced part of the recording with a simple double-click).
+	if (vifcap::Enabled())
 		return;
-	tried = true;
 
-	if (const char* cap = std::getenv("VIFCAP"))
+	static u32 tick = 0;
+	if ((tick++ & 31) != 0)
+		return; // poll the trigger file at most every 32 calls
+
+	const char* cap = std::getenv("VIFCAP");
+	if (!cap)
+		return;
+
+	if (const char* trig = std::getenv("VIFCAP_TRIGGER"))
 	{
-		vifcap::Open(cap);
-		// force every VU1 block to be recompiled with the trace hooks
-		vifcap_purge_vu1_code();
-		vifcap_vu1_mem_sync_reset();   // new capture: re-seed the memory shadow
-		vifcap::Top(vif1Regs.top);
-		vifcap::Itop(vif1Regs.itop);
-		vifcap::Micro(0, VU1.Micro, 0x4000);
-		vifcap::Mem(0, VU1.Mem, 0x4000);
+		if (*trig && !std::filesystem::exists(trig))
+			return;
 	}
+
+	vifcap::Open(cap);
+	// force every VU1 block to be recompiled with the trace hooks
+	vifcap_purge_vu1_code();
+	vifcap_vu1_mem_sync_reset();   // new capture: re-seed the memory shadow
+	vifcap::Top(vif1Regs.top);
+	vifcap::Itop(vif1Regs.itop);
+	vifcap::Micro(0, VU1.Micro, 0x4000);
+	vifcap::Mem(0, VU1.Mem, 0x4000);
 }
 
 void vifcap_open_at_load()

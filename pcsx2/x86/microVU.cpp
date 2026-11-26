@@ -43,6 +43,11 @@ bool s_vifcap_watch_cfg = false;
 u32 s_vifcap_watch_prev_pc = 0;
 } // namespace
 
+// vifcap: effective address of the last LQ/LQI/LQD (set by emitted code, turned
+// into a REC_MEMREAD by the next vifcap_log_insn call).  External linkage: the
+// JIT code is emitted from microVU0.cpp / microVU1.cpp.
+uint32_t g_vifcap_ldaddr = 0xFFFFFFFFu;
+
 // Called when the capture opens: drop all compiled VU1 code so every block is
 // recompiled with the logging hooks, while keeping the pipeline state intact.
 void vifcap_purge_vu1_code()
@@ -130,6 +135,21 @@ void vifcap_log_insn(u32 pc)
 
 	if (!s_vifcap_watch_cfg)
 		vifcap_watch_config();
+
+	// the previous instruction's LQ/LQI/LQD effective address (if any)
+	if (g_vifcap_ldaddr != 0xFFFFFFFFu)
+	{
+		u32 data[4];
+		const u32 a = g_vifcap_ldaddr & 0x3FFF;
+		for (u32 k = 0; k < 4; k++)
+		{
+			u32 v;
+			memcpy(&v, VU1.Mem + ((a + k * 4) & 0x3FFC), 4);
+			data[k] = v;
+		}
+		vifcap::MemRead(s_vifcap_watch_prev_pc, a, data);
+		g_vifcap_ldaddr = 0xFFFFFFFFu;
+	}
 
 	const bool in_range = (pc >= s_vifcap_watch_pc_lo && pc <= s_vifcap_watch_pc_hi);
 	if (in_range)

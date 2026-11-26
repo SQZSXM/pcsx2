@@ -20,7 +20,12 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19 };
+
+// Set by the emitted LQ/LQI/LQD code with the effective byte offset it is about to
+// read; vifcap_log_insn() turns it into a REC_MEMREAD record (the replay compares
+// its own effective addresses, which is how a VI divergence is located).
+extern uint32_t g_vifcap_ldaddr;
 
 inline FILE*& file()
 {
@@ -81,11 +86,21 @@ inline void KickInfo(uint32_t pc, uint32_t cycles)
     Rec(REC_KICKINFO, b, sizeof(b), nullptr, 0);
 }
 
-// Per-instruction memory watch on a small window of VU1 memory (default
-// 0x0C00..0x0D80, the packet buffer of the first XGKICK).  Changes are logged as
-//   u32 pc | u32 count | count * (u32 addr, u32 value)
-// so the replay can see which instruction wrote a packet word and with what
-// value (A's block-boundary hashes cannot show mid-block state).
+// Effective address (and the data at that address) of an LQ/LQI/LQD, recorded by
+// the per-instruction hook.  Comparing it with the replay's own effective
+// addresses shows exactly where a VI (pointer) state diverges.
+inline void MemRead(uint32_t pc, uint32_t addr, const uint32_t* data)
+{
+    uint32_t buf[6];
+    buf[0] = pc;
+    buf[1] = addr;
+    memcpy(buf + 2, data, 16);
+    Rec(REC_MEMREAD, buf, sizeof(buf), nullptr, 0);
+}
+
+// Per-instruction memory watch: windows of VU1 memory whose 4-byte changes are
+// logged together with the pc that caused them (A's block hashes cannot show
+// mid-block state).
 inline void MemWatch(uint32_t pc, const uint32_t* addr, const uint32_t* value, uint32_t count)
 {
     static thread_local uint8_t buf[8 + 8 * 64];

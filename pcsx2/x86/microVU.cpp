@@ -31,7 +31,10 @@ void vifcap_purge_vu1_code()
 	vifcap::XgKickState(VU1.xgkickenable, VU1.xgkickaddr, VU1.xgkicksizeremaining,
 	                    VU1.xgkickcyclecount, VU1.xgkickdiff, VU1.xgkickendpacket,
 	                    EmuConfig.Gamefixes.XgKickHack ? 1u : 0u,
-	                    (u32)VU1.xgkicklastcycle);
+	                    (u32)VU1.xgkicklastcycle,
+	                    microVU1.prog.lpState.xgkick,
+	                    microVU1.prog.lpState.xgkickcycles,
+	                    microVU1.VIxgkick);
 }
 
 // Called at compile time (plain C++ call): remember each block's cost.

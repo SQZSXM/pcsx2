@@ -108,17 +108,23 @@ inline void MVUCall(uint32_t startpc, uint32_t budget, uint32_t used, const uint
     Rec(REC_MVUCALL, b, sizeof(b), nullptr, 0);
 }
 
-// XGKICK transfer state machine (VURegs fields) at capture open.  The emulator is
-// already running when the capture starts, so a packet transfer can be pending
-// across the first record; without this seed the replay cannot know where the
-// next packet starts.  `hack` = EmuConfig.Gamefixes.XgKickHack (selects the
-// `_vuXGKICKTransfermVU` path over the one-shot `mVU_XGKICK_` path).
+// XGKICK transfer state at capture open.  The emulator is already running when
+// the capture starts, so a transfer can be pending across the first record:
+//   * `hack` = EmuConfig.Gamefixes.XgKickHack selects between the VU1 delayed
+//     state machine (`_vuXGKICKTransfermVU`) and the one-shot path
+//     (`mVU_XGKICK_`, driven by a countdown carried in the block pState);
+//   * `enable/addr/sizeremaining/cyclecount/diff/endpacket` are the VU1 state
+//     machine fields (used when hack != 0);
+//   * `pstate_xgkick`/`pstate_cycles` are microVU1.prog.lpState.xgkick(cycles)
+//     and `vixgkick` is microVU1.VIxgkick -- the pending one-shot kick.
 inline void XgKickState(uint32_t enable, uint32_t addr, uint32_t sizeremaining,
                         uint32_t cyclecount, uint32_t diff, uint32_t endpacket,
-                        uint32_t hack, uint32_t lastcycle)
+                        uint32_t hack, uint32_t lastcycle, uint32_t pstate_xgkick,
+                        uint32_t pstate_cycles, uint32_t vixgkick)
 {
-    const uint32_t b[8] = {enable, addr, sizeremaining, cyclecount, diff,
-                           endpacket, hack, lastcycle};
+    const uint32_t b[11] = {enable, addr, sizeremaining, cyclecount, diff,
+                            endpacket, hack, lastcycle, pstate_xgkick,
+                            pstate_cycles, vixgkick};
     Rec(REC_XGKICKSTATE, b, sizeof(b), nullptr, 0);
 }
 

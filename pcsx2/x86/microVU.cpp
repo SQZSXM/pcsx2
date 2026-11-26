@@ -49,38 +49,6 @@ u32 s_vifcap_prev_pc = 0;   // last instruction pc, regardless of the watch rang
 namespace vifcap
 {
 uint32_t g_vifcap_ldaddr = 0xFFFFFFFFu;
-uint32_t g_vifcap_vfidx = 0xFFFFFFFFu;
-uint32_t g_vifcap_vfbuf[4] = {0, 0, 0, 0};
-}
-
-static bool s_vifcap_vftrace_cfg = false;
-
-// Compile-time query: is the per-instruction VF trace requested?  The register
-// index comes from VIFCAP_VFREG (e.g. "12"); unset = disabled.
-bool vifcap_vftrace_on()
-{
-	if (!vifcap::Enabled())
-		return false;
-	if (!s_vifcap_vftrace_cfg)
-	{
-		s_vifcap_vftrace_cfg = true;
-		const char* env = std::getenv("VIFCAP_VFREG");
-		if (env && *env)
-			vifcap::g_vifcap_vfidx = static_cast<u32>(std::strtoul(env, nullptr, 0)) & 0x1Fu;
-	}
-	return vifcap::g_vifcap_vfidx != 0xFFFFFFFFu;
-}
-
-// Called from emitted code: log the traced VF register, ACC and Q.
-void vifcap_log_vftrace(u32 pc)
-{
-	if (!vifcap::Enabled())
-		return;
-	u32 qbits;
-	const float q = microVU1.regs().q;
-	memcpy(&qbits, &q, sizeof(qbits));
-	vifcap::VfTrace(pc, vifcap::g_vifcap_vfbuf,
-	                reinterpret_cast<const uint32_t*>(&microVU1.regs().ACC), qbits);
 }
 
 // Called when the capture opens: drop all compiled VU1 code so every block is

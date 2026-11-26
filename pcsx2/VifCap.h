@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15 };
 
 inline FILE*& file()
 {
@@ -77,6 +77,10 @@ inline void VF(const void* data, uint32_t len) { Rec(REC_VF, data, len, nullptr,
 inline void VI(const void* data, uint32_t len) { Rec(REC_VI, data, len, nullptr, 0); }
 
 inline void MemHash(uint32_t h) { Rec(REC_MEMHASH, &h, 4, nullptr, 0); }
+
+// microVU keeps four mac/clip/status flag instances; they live in
+// VU1.micro_*flags at block boundaries, so log them as one 48-byte record.
+inline void Flags(const void* data, uint32_t len) { Rec(REC_FLAGS, data, len, nullptr, 0); }
 
 inline void Micro(uint32_t addr, const void* data, uint32_t len)
 {

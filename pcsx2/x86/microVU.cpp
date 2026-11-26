@@ -113,6 +113,19 @@ void vifcap_log_block(u32 pc)
 	if (it != s_vifcap_blocks.end())
 	{
 		vifcap::Block(pc, it->second.cycles, it->second.count, VU1.VI[2].UL & 0xFFFF, VU1.VI[3].UL & 0xFFFF, VU1.VI[12].UL & 0xFFFF, VU1.macflag, VU1.statusflag);
+		{
+			// vifcap: microVU keeps four flag instances in VU1.micro_*flags at
+			// block boundaries; VU1.macflag/statusflag are only the memory copies
+			// and can be stale, so log the instances too.
+			uint32_t flags[12];
+			for (int i = 0; i < 4; i++)
+			{
+				flags[i] = VU1.micro_macflags[i];
+				flags[4 + i] = VU1.micro_clipflags[i];
+				flags[8 + i] = VU1.micro_statusflags[i];
+			}
+			vifcap::Flags(flags, sizeof(flags));
+		}
 		vifcap::VF(VU1.VF, sizeof(VU1.VF));
 		u32 vi16[16];
 		for (int i = 0; i < 16; i++) vi16[i] = VU1.VI[i].UL;

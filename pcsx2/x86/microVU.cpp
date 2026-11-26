@@ -4,7 +4,10 @@
 #include "microVU.h"
 #include "VifCap.h"
 
+#include <cstdlib>
+#include <cstring>
 #include <unordered_map>
+#include <vector>
 
 namespace
 {
@@ -15,13 +18,28 @@ struct VifCapBlockInfo
 };
 std::unordered_map<u32, VifCapBlockInfo> s_vifcap_blocks;
 
-// vifcap: per-instruction watch on a small window of VU1 memory (the packet
-// buffer of the first XGKICK).  Changes are logged by vifcap_log_insn() and
-// attributed to the instruction that caused them.
-constexpr u32 kVifcapWatchBase = 0x0C00;
-constexpr u32 kVifcapWatchLen = 0x180;
-u8 s_vifcap_watch_shadow[kVifcapWatchLen];
+// vifcap: per-instruction watch on VU1 memory windows.  Changes are logged by
+// vifcap_log_insn() and attributed to the instruction that caused them, which is
+// the only way to see mid-block memory state (A's block hashes cannot).
+//
+// Default: the two XGKICK packet buffers of the analysed game, scanning only the
+// instructions inside its vertex loop (pc range) so the cost stays negligible.
+// Override with the environment variable
+//     VIFCAP_WATCH="pc_lo:pc_hi:addr_lo:len[:addr_lo:len...]"
+// (decimal or 0x-prefixed); a single window is supported per override for now.
+constexpr u32 kVifcapWatchMaxLen = 0x1000;
+struct VifCapWatchWindow
+{
+	u32 base;
+	u32 len;
+};
+VifCapWatchWindow s_vifcap_watch[4] = {{0x2280, 0x400}, {0x2FC0, 0x340}, {0, 0}, {0, 0}};
+u32 s_vifcap_watch_count = 2;
+u32 s_vifcap_watch_pc_lo = 0x1500;
+u32 s_vifcap_watch_pc_hi = 0x2B00;
+u8 s_vifcap_watch_shadow[4][kVifcapWatchMaxLen];
 bool s_vifcap_watch_valid = false;
+bool s_vifcap_watch_cfg = false;
 u32 s_vifcap_watch_prev_pc = 0;
 } // namespace
 
@@ -62,6 +80,47 @@ void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 	s_vifcap_blocks[pc] = {cycles, count};
 }
 
+// Parse VIFCAP_WATCH once: "pc_lo:pc_hi:addr_lo:len[:addr_lo:len...]".
+static void vifcap_watch_config()
+{
+	s_vifcap_watch_cfg = true;
+	const char* env = std::getenv("VIFCAP_WATCH");
+	if (!env || !*env)
+		return;
+
+	std::vector<u32> vals;
+	const char* p = env;
+	while (*p)
+	{
+		char* end = nullptr;
+		const unsigned long v = std::strtoul(p, &end, 0);
+		if (end == p)
+			break;
+		vals.push_back(static_cast<u32>(v));
+		p = end;
+		while (*p == ':' || *p == ',')
+			++p;
+	}
+	if (vals.size() < 4)
+		return;
+
+	s_vifcap_watch_pc_lo = vals[0];
+	s_vifcap_watch_pc_hi = vals[1];
+	s_vifcap_watch_count = 0;
+	for (size_t i = 2; i + 1 < vals.size() && s_vifcap_watch_count < 4; i += 2)
+	{
+		const u32 base = vals[i] & 0x3FFF;
+		u32 len = vals[i + 1] & ~3u;
+		if (!len)
+			continue;
+		if (len > kVifcapWatchMaxLen)
+			len = kVifcapWatchMaxLen;
+		s_vifcap_watch[s_vifcap_watch_count].base = base;
+		s_vifcap_watch[s_vifcap_watch_count].len = len;
+		++s_vifcap_watch_count;
+	}
+}
+
 // Called from JIT-emitted code before every instruction (capped).
 void vifcap_log_insn(u32 pc)
 {
@@ -69,34 +128,50 @@ void vifcap_log_insn(u32 pc)
 	if (!vifcap::Enabled())
 		return;
 
-	if (s_vifcap_watch_valid)
+	if (!s_vifcap_watch_cfg)
+		vifcap_watch_config();
+
+	const bool in_range = (pc >= s_vifcap_watch_pc_lo && pc <= s_vifcap_watch_pc_hi);
+	if (in_range)
 	{
 		u32 addr[64];
 		u32 value[64];
 		u32 n = 0;
-		for (u32 off = 0; off < kVifcapWatchLen && n < 64; off += 4)
+		if (!s_vifcap_watch_valid)
 		{
-			u32 v;
-			memcpy(&v, VU1.Mem + kVifcapWatchBase + off, 4);
-			u32 old;
-			memcpy(&old, s_vifcap_watch_shadow + off, 4);
-			if (v != old)
+			for (u32 w = 0; w < s_vifcap_watch_count; w++)
+				memcpy(s_vifcap_watch_shadow[w], VU1.Mem + s_vifcap_watch[w].base,
+				       s_vifcap_watch[w].len);
+			s_vifcap_watch_valid = true;
+		}
+		for (u32 w = 0; w < s_vifcap_watch_count && n < 64; w++)
+		{
+			const u32 base = s_vifcap_watch[w].base;
+			const u32 len = s_vifcap_watch[w].len;
+			for (u32 off = 0; off < len && n < 64; off += 4)
 			{
-				addr[n] = kVifcapWatchBase + off;
-				value[n] = v;
-				memcpy(s_vifcap_watch_shadow + off, &v, 4);
-				++n;
+				u32 v;
+				memcpy(&v, VU1.Mem + base + off, 4);
+				u32 old;
+				memcpy(&old, s_vifcap_watch_shadow[w] + off, 4);
+				if (v != old)
+				{
+					addr[n] = base + off;
+					value[n] = v;
+					memcpy(s_vifcap_watch_shadow[w] + off, &v, 4);
+					++n;
+				}
 			}
 		}
 		if (n)
 			vifcap::MemWatch(s_vifcap_watch_prev_pc, addr, value, n);
+		s_vifcap_watch_prev_pc = pc;
 	}
 	else
 	{
-		memcpy(s_vifcap_watch_shadow, VU1.Mem + kVifcapWatchBase, kVifcapWatchLen);
-		s_vifcap_watch_valid = true;
+		// re-seed the shadows when the next watched instruction comes around
+		s_vifcap_watch_valid = false;
 	}
-	s_vifcap_watch_prev_pc = pc;
 
 	if (logged >= 500000)
 		return;

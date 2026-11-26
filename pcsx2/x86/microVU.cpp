@@ -14,6 +14,15 @@ struct VifCapBlockInfo
 	u32 count;
 };
 std::unordered_map<u32, VifCapBlockInfo> s_vifcap_blocks;
+
+// vifcap: per-instruction watch on a small window of VU1 memory (the packet
+// buffer of the first XGKICK).  Changes are logged by vifcap_log_insn() and
+// attributed to the instruction that caused them.
+constexpr u32 kVifcapWatchBase = 0x0C00;
+constexpr u32 kVifcapWatchLen = 0x180;
+u8 s_vifcap_watch_shadow[kVifcapWatchLen];
+bool s_vifcap_watch_valid = false;
+u32 s_vifcap_watch_prev_pc = 0;
 } // namespace
 
 // Called when the capture opens: drop all compiled VU1 code so every block is
@@ -54,18 +63,6 @@ void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 }
 
 // Called from JIT-emitted code before every instruction (capped).
-// vifcap: also runs the small VU-memory watch (packet buffer 0x0C00..0x0D80) --
-// changes are attributed to the instruction that caused them, which is the only
-// way to see mid-block memory state.
-namespace
-{
-constexpr u32 kVifcapWatchBase = 0x0C00;
-constexpr u32 kVifcapWatchLen = 0x180;
-u8 s_vifcap_watch_shadow[kVifcapWatchLen];
-bool s_vifcap_watch_valid = false;
-u32 s_vifcap_watch_prev_pc = 0;
-} // namespace
-
 void vifcap_log_insn(u32 pc)
 {
 	static u32 logged = 0;

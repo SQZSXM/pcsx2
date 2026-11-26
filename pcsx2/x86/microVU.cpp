@@ -23,6 +23,15 @@ void vifcap_purge_vu1_code()
 	const microRegInfo saved = microVU1.prog.lpState;
 	mVUreset(microVU1, false);
 	microVU1.prog.lpState = saved;
+	// vifcap: seed the XGKICK transfer state machine.  A packet transfer may be
+	// pending across the capture start (the emulator was already running), and
+	// without it the replay cannot tell where the next packet begins.  The
+	// CHECK_XGKICKHACK gamefix picks between the delayed state machine and the
+	// one-shot transfer path, so it is recorded too.
+	vifcap::XgKickState(VU1.xgkickenable, VU1.xgkickaddr, VU1.xgkicksizeremaining,
+	                    VU1.xgkickcyclecount, VU1.xgkickdiff, VU1.xgkickendpacket,
+	                    EmuConfig.Gamefixes.XgKickHack ? 1u : 0u,
+	                    (u32)VU1.xgkicklastcycle);
 }
 
 // Called at compile time (plain C++ call): remember each block's cost.

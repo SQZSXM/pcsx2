@@ -76,7 +76,9 @@ void vifcap_log_vftrace(u32 pc)
 {
 	if (!vifcap::Enabled())
 		return;
-	const u32 qbits = microVU1.regs().q.UL;
+	u32 qbits;
+	const float q = microVU1.regs().q;
+	memcpy(&qbits, &q, sizeof(qbits));
 	vifcap::VfTrace(pc, vifcap::g_vifcap_vfbuf,
 	                reinterpret_cast<const uint32_t*>(&microVU1.regs().ACC), qbits);
 }

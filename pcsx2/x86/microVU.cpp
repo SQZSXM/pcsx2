@@ -41,6 +41,7 @@ u8 s_vifcap_watch_shadow[4][kVifcapWatchMaxLen];
 bool s_vifcap_watch_valid = false;
 bool s_vifcap_watch_cfg = false;
 u32 s_vifcap_watch_prev_pc = 0;
+u32 s_vifcap_prev_pc = 0;   // last instruction pc, regardless of the watch range
 } // namespace
 
 // vifcap: effective address of the last LQ/LQI/LQD (set by emitted code, turned
@@ -155,7 +156,7 @@ void vifcap_log_insn(u32 pc)
 			memcpy(&v, VU1.Mem + ((a + k * 4) & 0x3FFC), 4);
 			data[k] = v;
 		}
-		vifcap::MemRead(s_vifcap_watch_prev_pc, a, data);
+		vifcap::MemRead(s_vifcap_prev_pc, a, data);
 		vifcap::g_vifcap_ldaddr = 0xFFFFFFFFu;
 	}
 
@@ -200,6 +201,8 @@ void vifcap_log_insn(u32 pc)
 		// re-seed the shadows when the next watched instruction comes around
 		s_vifcap_watch_valid = false;
 	}
+
+	s_vifcap_prev_pc = pc;
 
 	if (logged >= 500000)
 		return;

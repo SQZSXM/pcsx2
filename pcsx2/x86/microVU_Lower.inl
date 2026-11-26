@@ -1285,7 +1285,7 @@ mVUop(mVU_ISWR)
 			mVU.regAlloc->moveVIToGPR(gprT1, _Is_);
 			mVUaddrFix(mVU, gprT1q, gprT2q);
 			if (vifcap::Enabled() && isVU1)
-				xMOV(ptr32[&g_vifcap_ldaddr], gprT1);
+				xMOV(ptr32[&vifcap::g_vifcap_ldaddr], gprT1);
 			is = gprT1q;
 		}
 		const xRegister32& regT = mVU.regAlloc->allocGPR(_It_, -1, false, true);
@@ -1354,7 +1354,7 @@ mVUop(mVU_LQ)
 			}
 			mVUaddrFix(mVU, gprT1q, gprT2q);
 			if (vifcap::Enabled() && isVU1)
-				xMOV(ptr32[&g_vifcap_ldaddr], gprT1);
+				xMOV(ptr32[&vifcap::g_vifcap_ldaddr], gprT1);
 		}
 
 		const xmm& Ft = mVU.regAlloc->allocReg(-1, _Ft_, _X_Y_Z_W);
@@ -1380,7 +1380,7 @@ mVUop(mVU_LQD)
 			mVU.regAlloc->clearNeeded(regS);
 			mVUaddrFix(mVU, gprT1q, gprT2q);
 			if (vifcap::Enabled() && isVU1)
-				xMOV(ptr32[&g_vifcap_ldaddr], gprT1);
+				xMOV(ptr32[&vifcap::g_vifcap_ldaddr], gprT1);
 			is = gprT1q;
 		}
 		else
@@ -1420,7 +1420,7 @@ mVUop(mVU_LQI)
 			mVU.regAlloc->clearNeeded(regS);
 			mVUaddrFix(mVU, gprT1q, gprT2q);
 			if (vifcap::Enabled() && isVU1)
-				xMOV(ptr32[&g_vifcap_ldaddr], gprT1);
+				xMOV(ptr32[&vifcap::g_vifcap_ldaddr], gprT1);
 			is = gprT1q;
 		}
 		if (!mVUlow.noWriteVF)

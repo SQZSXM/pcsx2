@@ -238,11 +238,12 @@ void mVUexecuteInstruction(mV)
 
 	flushRegs(mVU);
 
-	// vifcap: optional per-instruction VF/ACC/Q sample.  Placed *after* the last
-	// flushRegs() so the values are already in VURegs memory -- no interaction
-	// with the register allocator (the earlier mid-instruction version crashed).
+	// vifcap: optional per-instruction VF/ACC/Q sample.  flushAll() makes VURegs a
+	// faithful mirror (microVU otherwise keeps VF/ACC/Q in host registers), so the
+	// sample needs no register-allocator interaction at all.
 	if (isVU1 && vifcap_vftrace_on() && vifcap_vftrace_pc(xPC))
 	{
+		mVU.regAlloc->flushAll();
 		mVUbackupRegs(mVU, true);
 		xFastCall((void*)vifcap_log_vftrace, xPC);
 		mVUrestoreRegs(mVU, true);

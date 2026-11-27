@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19, REC_BLOCKCODE = 20, REC_VFTRACE = 21, REC_MEMWRITE = 22, REC_PSTATE = 23, REC_KICKMEM = 24 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19, REC_BLOCKCODE = 20, REC_VFTRACE = 21, REC_MEMWRITE = 22, REC_PSTATE = 23, REC_KICKMEM = 24, REC_INSNSTALL = 25 };
 
 // Per-instruction VF/ACC/Q sample (emitted code stores one VF register into
 // g_vifcap_vfbuf before the hook runs).  Slices 74+ of the analysed game diverge
@@ -105,6 +105,14 @@ inline void BlockCode(uint32_t pc, uint32_t count, const void* words, uint32_t b
 {
     const uint32_t hdr[2] = {pc, count};
     Rec(REC_BLOCKCODE, hdr, sizeof(hdr), words, bytes);
+}
+
+// What microVU's pass-1 analyzer charged for one instruction while pricing a block
+// (u32 blockpc | u32 pc | u32 stall | u32 cycles_so_far).
+inline void InsnStall(uint32_t blockpc, uint32_t pc, uint32_t stall, uint32_t cycles)
+{
+    uint32_t b[4] = {blockpc, pc, stall, cycles};
+    Rec(REC_INSNSTALL, b, sizeof(b), nullptr, 0);
 }
 
 // Compile-time pipeline state of a block (microRegInfo).  microVU prices a block

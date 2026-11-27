@@ -8,6 +8,7 @@
 extern void vifcap_log_insn(u32 pc);
 extern void vifcap_log_block(u32 pc);
 extern void vifcap_record_block(u32 pc, u32 cycles, u32 count, const void* pstate, u32 psize);
+extern void vifcap_log_insnstall(u32 blockpc, u32 pc, u32 stall, u32 cycles);
 
 // vifcap VF/ACC/Q trace (emitted inline, VIFCAP_VFREG selects the register and
 // the optional VIFCAP_VFPC whitelist restricts it to specific instruction pcs)
@@ -428,6 +429,9 @@ void cmpVFregs(microVFreg& VFreg1, microVFreg& VFreg2, bool& xVar)
 void mVUsetCycles(mV)
 {
 	mVUincCycles(mVU, mVUstall);
+	// vifcap: what the analyzer charged for this instruction while pricing the block
+	if (isVU1)
+		vifcap_log_insnstall(mVUstartPC, xPC, mVUstall, mVUcycles);
 	// If upper Op && lower Op write to same VF reg:
 	if ((mVUregsTemp.VFreg[0] == mVUregsTemp.VFreg[1]) && mVUregsTemp.VFreg[0])
 	{

@@ -176,11 +176,31 @@ void vifcap_purge_vu1_code()
 
 // Called from JIT-emitted code right before a one-shot XGKICK transfer: remember
 // which VU instruction performed it (compile-time pc) and the cycle counter.
+void vifcap_log_insnstall(u32 blockpc, u32 pc, u32 stall, u32 cycles)
+{
+	if (!vifcap::Enabled())
+		return;
+	vifcap::InsnStall(blockpc & 0x3FFF, pc & 0x3FFF, stall, cycles);
+}
+
 void vifcap_log_kickinfo(u32 pc)
 {
 	if (!vifcap::Enabled())
 		return;
 	vifcap::KickInfo(pc, microVU1.cycles);
+	// raw VU bytes at the transfer address: lets the replay tell "same memory,
+	// different size" from "different memory" for the boundary packet.
+	{
+		u32 raw[16];
+		const u32 a = VU1.xgkickaddr & 0x3FFF;
+		for (u32 k = 0; k < 16; k++)
+		{
+			u32 v;
+			memcpy(&v, VU1.Mem + ((a + k * 4) & 0x3FFC), 4);
+			raw[k] = v;
+		}
+		vifcap::KickMem(a, raw, sizeof(raw));
+	}
 }
 
 // Called at compile time (plain C++ call): remember each block's cost.

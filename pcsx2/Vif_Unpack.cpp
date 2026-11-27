@@ -562,7 +562,7 @@ __fi void _nVifUnpack(int idx, const u8* data, uint mode, bool isFill)
 extern void vifcap_purge_vu1_code();
 extern void vifcap_vu1_mem_sync_reset();
 
-void vifcap_open_now()
+void vifcap_open_now(bool force)
 {
 	// The capture opens either on the first VU1 microprogram run or when a
 	// savestate is loaded.  When VIFCAP_TRIGGER names a file, opening waits for
@@ -579,10 +579,15 @@ void vifcap_open_now()
 	if (!cap)
 		return;
 
-	if (const char* trig = std::getenv("VIFCAP_TRIGGER"))
+	if (!force)
 	{
-		if (*trig && !std::filesystem::exists(trig))
-			return;
+		// Only the mid-game "trigger file" path is gated; a savestate load always
+		// opens the capture (it is the only point with a well-defined initial state).
+		if (const char* trig = std::getenv("VIFCAP_TRIGGER"))
+		{
+			if (*trig && !std::filesystem::exists(trig))
+				return;
+		}
 	}
 
 	vifcap::Open(cap);
@@ -597,5 +602,5 @@ void vifcap_open_now()
 
 void vifcap_open_at_load()
 {
-	vifcap_open_now();
+	vifcap_open_now(true);
 }

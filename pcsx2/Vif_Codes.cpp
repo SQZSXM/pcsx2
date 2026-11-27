@@ -93,8 +93,8 @@ static __fi void vuExecMicro(int idx, u32 addr, bool requires_wait)
 	{
 		// vifcap: allow a recording to start at the first VU1 microprogram run
 		// (no savestate needed); a no-op once the capture is already open.
-		extern void vifcap_open_now();
-		vifcap_open_now();
+		extern void vifcap_open_now(bool force);
+		vifcap_open_now(false);   // only when the trigger file appeared
 
 		// in case we're handling a VIF1 execMicro, set the top with the tops value
 		vifRegs.top = vifRegs.tops & 0x3ff;

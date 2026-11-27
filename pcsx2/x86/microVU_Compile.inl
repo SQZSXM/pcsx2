@@ -7,7 +7,7 @@
 
 extern void vifcap_log_insn(u32 pc);
 extern void vifcap_log_block(u32 pc);
-extern void vifcap_record_block(u32 pc, u32 cycles, u32 count);
+extern void vifcap_record_block(u32 pc, u32 cycles, u32 count, const void* pstate, u32 psize);
 
 // vifcap VF/ACC/Q trace (emitted inline, VIFCAP_VFREG selects the register and
 // the optional VIFCAP_VFPC whitelist restricts it to specific instruction pcs)
@@ -490,7 +490,7 @@ void mVUtestCycles(microVU& mVU, microFlagCycles& mFC)
 	// vifcap: record every block entry (A1 block-level trace)
 	if (isVU1)
 	{
-		vifcap_record_block(mVUstartPC, mVUcycles, mVUcount);
+		vifcap_record_block(mVUstartPC, mVUcycles, mVUcount, (const void*)&mVUregs, (u32)sizeof(microRegInfo));
 		mVUbackupRegs(mVU, true);
 		xFastCall((void*)vifcap_log_block, mVUstartPC);
 		mVUrestoreRegs(mVU, true);

@@ -1826,6 +1826,11 @@ void _vuXGKICKTransfer(s32 cycles, bool flush)
 				const u32 room = 0x4000 - (VU1.xgkickaddr & 0x3FFF);
 				const u32 n = size & 0xFFFF;
 				vifcap::Kick(VU1.xgkickaddr & 0x3FFF, vuRegs[1].Mem + (VU1.xgkickaddr & 0x3FFF), (n < room) ? n : room);
+				{
+					const u32 a = VU1.xgkickaddr & 0x3FFF;
+					const u32 raw = (n < room) ? n : room;
+					vifcap::KickMem(a, vuRegs[1].Mem + a, raw < 64 ? raw : 64);
+				}
 			}
 			VU1.xgkickendpacket = size >> 31;
 			VU1.xgkickdiff = 0x4000 - VU1.xgkickaddr;

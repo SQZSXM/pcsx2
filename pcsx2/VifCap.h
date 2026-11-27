@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19, REC_BLOCKCODE = 20, REC_VFTRACE = 21, REC_MEMWRITE = 22 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19, REC_BLOCKCODE = 20, REC_VFTRACE = 21, REC_MEMWRITE = 22, REC_PSTATE = 23, REC_KICKMEM = 24 };
 
 // Per-instruction VF/ACC/Q sample (emitted code stores one VF register into
 // g_vifcap_vfbuf before the hook runs).  Slices 74+ of the analysed game diverge
@@ -105,6 +105,31 @@ inline void BlockCode(uint32_t pc, uint32_t count, const void* words, uint32_t b
 {
     const uint32_t hdr[2] = {pc, count};
     Rec(REC_BLOCKCODE, hdr, sizeof(hdr), words, bytes);
+}
+
+// Compile-time pipeline state of a block (microRegInfo).  microVU prices a block
+// from this state, so the replay needs it to reproduce mVUcycles exactly.
+inline void PState(uint32_t pc, const void* state, uint32_t size)
+{
+    uint8_t buf[4 + 4 + 256];
+    if (size > 256)
+        size = 256;
+    memcpy(buf, &pc, 4);
+    memcpy(buf + 4, &size, 4);
+    memcpy(buf + 8, state, size);
+    Rec(REC_PSTATE, buf, 8 + size, nullptr, 0);
+}
+
+// Raw VU memory at the kick address when XGKICK starts a packet (lets the replay
+// tell "same memory, different size" from "different memory" at the boundary).
+inline void KickMem(uint32_t addr, const void* mem, uint32_t size)
+{
+    uint32_t buf[1 + 16];
+    if (size > 64)
+        size = 64;
+    buf[0] = addr;
+    memcpy(buf + 1, mem, size);
+    Rec(REC_KICKMEM, buf, 4 + size, nullptr, 0);
 }
 
 // Effective address + the 16 bytes a SQ/SQD/SQI just wrote (mirrors MemRead).

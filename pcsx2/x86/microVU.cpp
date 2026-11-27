@@ -184,7 +184,7 @@ void vifcap_log_kickinfo(u32 pc)
 }
 
 // Called at compile time (plain C++ call): remember each block's cost.
-void vifcap_record_block(u32 pc, u32 cycles, u32 count)
+void vifcap_record_block(u32 pc, u32 cycles, u32 count, const void* pstate, u32 psize)
 {
 	s_vifcap_blocks[pc] = {cycles, count};
 	// vifcap: dump the words this block is being compiled from.  microVU keeps
@@ -193,6 +193,8 @@ void vifcap_record_block(u32 pc, u32 cycles, u32 count)
 	// pc is microVU's iPC (byte address / 4)
 	if (vifcap::Enabled() && count && count <= 128 && (pc * 4 + count * 8) <= 0x4000)
 		vifcap::BlockCode(pc * 4, count, VU1.Micro + pc * 4, count * 8);
+	if (vifcap::Enabled() && pstate && psize)
+		vifcap::PState(pc * 4, pstate, psize);
 }
 
 // Parse VIFCAP_WATCH once: "pc_lo:pc_hi:addr_lo:len[:addr_lo:len...]".

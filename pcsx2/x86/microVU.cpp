@@ -259,6 +259,17 @@ static void vifcap_watch_config()
 }
 
 // Called from JIT-emitted code before every instruction (capped).
+bool vifcap_insn_on()
+{
+	static int mode = -1;
+	if (mode < 0)
+	{
+		const char* e = std::getenv("VIFCAP_INSN");
+		mode = (e && *e && *e != '0') ? 1 : 0;
+	}
+	return mode != 0;
+}
+
 void vifcap_log_insn(u32 pc)
 {
 	static u32 logged = 0;

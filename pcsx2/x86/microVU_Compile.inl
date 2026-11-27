@@ -6,6 +6,7 @@
 #include "VifCap.h"
 
 extern void vifcap_log_insn(u32 pc);
+bool vifcap_insn_on();
 extern void vifcap_log_block(u32 pc);
 extern void vifcap_record_block(u32 pc, u32 cycles, u32 count, const void* pstate, u32 psize);
 extern void vifcap_log_insnstall(u32 blockpc, u32 pc, u32 stall, u32 cycles);
@@ -209,7 +210,10 @@ void doSwapOp(mV)
 void mVUexecuteInstruction(mV)
 {
 	// vifcap: per-instruction PC trace (A1 semantics oracle)
-	if (isVU1)
+	// Off by default: one backup+call+restore per VU1 instruction is what made
+	// recordings crawl.  Set VIFCAP_INSN=1 for the full-fidelity capture (needed
+	// only for REC_INSN / MEMWATCH / MEMREAD / MEMWRITE based checks).
+	if (isVU1 && vifcap_insn_on())
 	{
 		mVUbackupRegs(mVU, true);
 		xFastCall((void*)vifcap_log_insn, xPC);

@@ -49,8 +49,9 @@ u32 s_vifcap_prev_pc = 0;   // last instruction pc, regardless of the watch rang
 namespace vifcap
 {
 uint32_t g_vifcap_ldaddr = 0xFFFFFFFFu;
-uint32_t g_vifcap_vfidx = 0xFFFFFFFFu;
-uint32_t g_vifcap_vfbuf[4] = {0, 0, 0, 0};
+uint32_t g_vifcap_vfidx[4] = {0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu};
+uint32_t g_vifcap_vfcount = 0;
+uint32_t g_vifcap_vfbuf[16] = {0};
 }
 
 static bool s_vifcap_vftrace_cfg = false;
@@ -112,11 +113,21 @@ bool vifcap_vftrace_on()
 	if (!s_vifcap_vftrace_cfg)
 	{
 		s_vifcap_vftrace_cfg = true;
-		const char* env = std::getenv("VIFCAP_VFREG");
-		if (env && *env)
-			vifcap::g_vifcap_vfidx = static_cast<u32>(std::strtoul(env, nullptr, 0)) & 0x1Fu;
+		// VIFCAP_VFREG="12,19,16,17" (up to four registers)
+		const char* p = std::getenv("VIFCAP_VFREG");
+		while (p && *p && vifcap::g_vifcap_vfcount < 4)
+		{
+			char* end = nullptr;
+			const unsigned long v = std::strtoul(p, &end, 0);
+			if (end == p)
+				break;
+			vifcap::g_vifcap_vfidx[vifcap::g_vifcap_vfcount++] = static_cast<u32>(v) & 0x1Fu;
+			p = end;
+			while (*p == ',' || *p == ' ')
+				++p;
+		}
 	}
-	return vifcap::g_vifcap_vfidx != 0xFFFFFFFFu;
+	return vifcap::g_vifcap_vfcount != 0;
 }
 
 // Called from emitted code: log the traced VF register, ACC and Q.
@@ -126,8 +137,13 @@ void vifcap_log_vftrace(u32 pc)
 		return;
 	// Called *after* flushRegs(), so the VF/ACC copies in VURegs are current and
 	// no register-allocator interaction is needed here.
-	const u32 idx = vifcap::g_vifcap_vfidx & 0x1F;
-	vifcap::VfTrace(pc, reinterpret_cast<const uint32_t*>(&microVU1.regs().VF[idx]),
+	for (u32 i = 0; i < vifcap::g_vifcap_vfcount && i < 4; i++)
+	{
+		const u32 idx = vifcap::g_vifcap_vfidx[i] & 0x1F;
+		memcpy(&vifcap::g_vifcap_vfbuf[i * 4],
+		       &microVU1.regs().VF[idx], 16);
+	}
+	vifcap::VfTrace(pc, vifcap::g_vifcap_vfcount, vifcap::g_vifcap_vfbuf,
 	                reinterpret_cast<const uint32_t*>(&microVU1.regs().ACC),
 	                microVU1.regs().q.UL);
 }

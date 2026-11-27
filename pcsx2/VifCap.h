@@ -26,8 +26,9 @@ enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME
 // g_vifcap_vfbuf before the hook runs).  Slices 74+ of the analysed game diverge
 // only in computed values, which the block-boundary checks cannot see.
 // (VfTrace itself is defined below, after Rec().)
-extern uint32_t g_vifcap_vfidx;
-extern uint32_t g_vifcap_vfbuf[4];
+extern uint32_t g_vifcap_vfidx[4];   // registers sampled per traced instruction
+extern uint32_t g_vifcap_vfcount;
+extern uint32_t g_vifcap_vfbuf[16];  // scratch (4 registers x 4 lanes)
 
 // Set by the emitted LQ/LQI/LQD code with the effective byte offset it is about to
 // read; vifcap_log_insn() turns it into a REC_MEMREAD record (the replay compares
@@ -115,14 +116,21 @@ inline void MemRead(uint32_t pc, uint32_t addr, const uint32_t* data)
 }
 
 // Per-instruction VF/ACC/Q sample (see the extern declarations above).
-inline void VfTrace(uint32_t pc, const uint32_t* vf, const uint32_t* acc, uint32_t q)
+inline void VfTrace(uint32_t pc, uint32_t count, const uint32_t* vf, const uint32_t* acc, uint32_t q)
 {
-    uint32_t b[10];
-    b[0] = pc;
-    memcpy(b + 1, vf, 16);
-    memcpy(b + 5, acc, 16);
-    b[9] = q;
-    Rec(REC_VFTRACE, b, sizeof(b), nullptr, 0);
+    // u32 pc | u32 count | count * 4 lanes (indexed by the VIFCAP_VFREG order) |
+    // u32 acc[4] | u32 q
+    uint32_t b[2 + 16 + 4 + 1];
+    uint32_t n = 0;
+    b[n++] = pc;
+    b[n++] = count;
+    for (uint32_t i = 0; i < count && i < 4; i++)
+        for (uint32_t k = 0; k < 4; k++)
+            b[n++] = vf[i * 4 + k];
+    memcpy(b + n, acc, 16);
+    n += 4;
+    b[n++] = q;
+    Rec(REC_VFTRACE, b, n * 4, nullptr, 0);
 }
 
 // Per-instruction memory watch: windows of VU1 memory whose 4-byte changes are

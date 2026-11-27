@@ -3,9 +3,17 @@
 
 #pragma once
 
+#include "VifCap.h"
+
 extern void vifcap_log_insn(u32 pc);
 extern void vifcap_log_block(u32 pc);
 extern void vifcap_record_block(u32 pc, u32 cycles, u32 count);
+
+// vifcap VF/ACC/Q trace (emitted inline, VIFCAP_VFREG selects the register and
+// the optional VIFCAP_VFPC whitelist restricts it to specific instruction pcs)
+bool vifcap_vftrace_on();
+bool vifcap_vftrace_pc(u32 pc);
+void vifcap_log_vftrace(u32 pc);
 
 //------------------------------------------------------------------
 // Messages Called at Execution Time...
@@ -207,6 +215,8 @@ void mVUexecuteInstruction(mV)
 		mVUrestoreRegs(mVU, true);
 	}
 
+	// vifcap: optional per-instruction VF/ACC/Q sample (emitted after flushRegs)
+
 	if (mVUlow.isNOP)
 	{
 		incPC(1);
@@ -227,6 +237,16 @@ void mVUexecuteInstruction(mV)
 	}
 
 	flushRegs(mVU);
+
+	// vifcap: optional per-instruction VF/ACC/Q sample.  Placed *after* the last
+	// flushRegs() so the values are already in VURegs memory -- no interaction
+	// with the register allocator (the earlier mid-instruction version crashed).
+	if (isVU1 && vifcap_vftrace_on() && vifcap_vftrace_pc(xPC))
+	{
+		mVUbackupRegs(mVU, true);
+		xFastCall((void*)vifcap_log_vftrace, xPC);
+		mVUrestoreRegs(mVU, true);
+	}
 }
 
 //------------------------------------------------------------------

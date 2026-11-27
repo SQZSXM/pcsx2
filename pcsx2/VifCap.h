@@ -127,11 +127,11 @@ inline void MemRead(uint32_t pc, uint32_t addr, const uint32_t* data)
 }
 
 // Per-instruction VF/ACC/Q sample (see the extern declarations above).
-inline void VfTrace(uint32_t pc, uint32_t count, const uint32_t* vf, const uint32_t* acc, uint32_t q)
+inline void VfTrace(uint32_t pc, uint32_t count, const uint32_t* vf, const uint32_t* acc, uint32_t q, const uint32_t* vi)
 {
     // u32 pc | u32 count | count * 4 lanes (indexed by the VIFCAP_VFREG order) |
     // u32 acc[4] | u32 q
-    uint32_t b[2 + 16 + 4 + 1];
+    uint32_t b[2 + 16 + 4 + 1 + 16];
     uint32_t n = 0;
     b[n++] = pc;
     b[n++] = count;
@@ -141,6 +141,8 @@ inline void VfTrace(uint32_t pc, uint32_t count, const uint32_t* vf, const uint3
     memcpy(b + n, acc, 16);
     n += 4;
     b[n++] = q;
+    for (uint32_t i = 0; i < 16; i++)
+        b[n++] = vi[i];
     Rec(REC_VFTRACE, b, n * 4, nullptr, 0);
 }
 

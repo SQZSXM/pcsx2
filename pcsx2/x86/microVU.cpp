@@ -144,9 +144,12 @@ void vifcap_log_vftrace(u32 pc)
 		memcpy(&vifcap::g_vifcap_vfbuf[i * 4],
 		       &microVU1.regs().VF[idx], 16);
 	}
+	u32 vi[16];
+	for (u32 i = 0; i < 16; i++)
+		vi[i] = microVU1.regs().VI[i].UL;
 	vifcap::VfTrace(pc, vifcap::g_vifcap_vfcount, vifcap::g_vifcap_vfbuf,
 	                reinterpret_cast<const uint32_t*>(&microVU1.regs().ACC),
-	                microVU1.regs().q.UL);
+	                microVU1.regs().q.UL, vi);
 }
 
 // Called when the capture opens: drop all compiled VU1 code so every block is

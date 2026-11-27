@@ -1464,6 +1464,8 @@ mVUop(mVU_SQ)
 				xADD(gprT1, gprT2);
 			}
 			mVUaddrFix(mVU, gprT1q, gprT2q);
+			if (vifcap::Enabled() && isVU1)
+				xMOV(ptr32[&vifcap::g_vifcap_staddr], gprT1);
 		}
 
 		const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, _XYZW_PS ? -1 : 0, _X_Y_Z_W);
@@ -1488,6 +1490,8 @@ mVUop(mVU_SQD)
 			xMOVZX(gprT1, xRegister16(regT));
 			mVU.regAlloc->clearNeeded(regT);
 			mVUaddrFix(mVU, gprT1q, gprT2q);
+			if (vifcap::Enabled() && isVU1)
+				xMOV(ptr32[&vifcap::g_vifcap_staddr], gprT1);
 			it = gprT1q;
 		}
 		else
@@ -1518,6 +1522,8 @@ mVUop(mVU_SQI)
 			xINC(regT);
 			mVU.regAlloc->clearNeeded(regT);
 			mVUaddrFix(mVU, gprT1q, gprT2q);
+			if (vifcap::Enabled() && isVU1)
+				xMOV(ptr32[&vifcap::g_vifcap_staddr], gprT1);
 		}
 		const xmm& Fs = mVU.regAlloc->allocReg(_Fs_, _XYZW_PS ? -1 : 0, _X_Y_Z_W);
 		if (_It_)

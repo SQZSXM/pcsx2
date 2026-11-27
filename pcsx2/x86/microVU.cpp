@@ -49,6 +49,7 @@ u32 s_vifcap_prev_pc = 0;   // last instruction pc, regardless of the watch rang
 namespace vifcap
 {
 uint32_t g_vifcap_ldaddr = 0xFFFFFFFFu;
+uint32_t g_vifcap_staddr = 0xFFFFFFFFu;
 uint32_t g_vifcap_vfidx[4] = {0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu, 0xFFFFFFFFu};
 uint32_t g_vifcap_vfcount = 0;
 uint32_t g_vifcap_vfbuf[16] = {0};
@@ -255,6 +256,21 @@ void vifcap_log_insn(u32 pc)
 		}
 		vifcap::MemRead(s_vifcap_prev_pc, a, data);
 		vifcap::g_vifcap_ldaddr = 0xFFFFFFFFu;
+	}
+
+	// store address + the 16 bytes the previous SQ/SQD/SQI wrote
+	if (vifcap::g_vifcap_staddr != 0xFFFFFFFFu)
+	{
+		u32 data[4];
+		const u32 a = vifcap::g_vifcap_staddr & 0x3FFF;
+		for (u32 k = 0; k < 4; k++)
+		{
+			u32 v;
+			memcpy(&v, VU1.Mem + ((a + k * 4) & 0x3FFC), 4);
+			data[k] = v;
+		}
+		vifcap::MemWrite(s_vifcap_prev_pc, a, data);
+		vifcap::g_vifcap_staddr = 0xFFFFFFFFu;
 	}
 
 	const bool in_range = (pc >= s_vifcap_watch_pc_lo && pc <= s_vifcap_watch_pc_hi);

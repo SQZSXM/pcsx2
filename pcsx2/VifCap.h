@@ -20,7 +20,7 @@
 
 namespace vifcap {
 
-enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19, REC_BLOCKCODE = 20, REC_VFTRACE = 21 };
+enum : uint8_t { REC_MEM = 1, REC_TOP = 2, REC_ITOP = 3, REC_KICK = 4, REC_FRAME = 5, REC_VUREGS = 6, REC_MVUCALL = 7, REC_BLOCK = 8, REC_INSN = 9, REC_MICRO = 10, REC_VF = 11, REC_VI = 12, REC_MEMHASH = 13, REC_MEMSYNC = 14, REC_FLAGS = 15, REC_XGKICKSTATE = 16, REC_KICKINFO = 17, REC_MEMWATCH = 18, REC_MEMREAD = 19, REC_BLOCKCODE = 20, REC_VFTRACE = 21, REC_MEMWRITE = 22 };
 
 // Per-instruction VF/ACC/Q sample (emitted code stores one VF register into
 // g_vifcap_vfbuf before the hook runs).  Slices 74+ of the analysed game diverge
@@ -34,6 +34,7 @@ extern uint32_t g_vifcap_vfbuf[16];  // scratch (4 registers x 4 lanes)
 // read; vifcap_log_insn() turns it into a REC_MEMREAD record (the replay compares
 // its own effective addresses, which is how a VI divergence is located).
 extern uint32_t g_vifcap_ldaddr;
+extern uint32_t g_vifcap_staddr;
 
 inline FILE*& file()
 {
@@ -104,6 +105,16 @@ inline void BlockCode(uint32_t pc, uint32_t count, const void* words, uint32_t b
 {
     const uint32_t hdr[2] = {pc, count};
     Rec(REC_BLOCKCODE, hdr, sizeof(hdr), words, bytes);
+}
+
+// Effective address + the 16 bytes a SQ/SQD/SQI just wrote (mirrors MemRead).
+inline void MemWrite(uint32_t pc, uint32_t addr, const uint32_t* data)
+{
+    uint32_t buf[6];
+    buf[0] = pc;
+    buf[1] = addr;
+    memcpy(buf + 2, data, 16);
+    Rec(REC_MEMWRITE, buf, sizeof(buf), nullptr, 0);
 }
 
 inline void MemRead(uint32_t pc, uint32_t addr, const uint32_t* data)
